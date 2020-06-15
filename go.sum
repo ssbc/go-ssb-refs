@@ -6,7 +6,10 @@ github.com/andybalholm/cascadia v1.0.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9Pq
 github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927/go.mod h1:h/aW8ynjgkuj+NQRlZcDbAbM1ORAbXjXX77sX7T289U=
 github.com/cryptix/go v1.3.1/go.mod h1:mFQotm9rTzptzvNjJM+1vSIDa/rVOVqMu0889GIXg70=
 github.com/cryptix/go v1.3.2/go.mod h1:mFQotm9rTzptzvNjJM+1vSIDa/rVOVqMu0889GIXg70=
+github.com/cryptix/go v1.4.0 h1:9HUWptRQ9j0v7mquHnAM6inuOkUnG15HZpWD3Dtt32I=
 github.com/cryptix/go v1.4.0/go.mod h1:bopBFzjGB7Oqrsvt7HaPZSOX1gJW7hgIb84XNhnOhOY=
+github.com/cryptix/go v1.5.0 h1:2+g9oKxiTc5ELGISY2E4Q4E7X8FwP3cXyKbb93EUaZY=
+github.com/cryptix/go v1.5.0/go.mod h1:bopBFzjGB7Oqrsvt7HaPZSOX1gJW7hgIb84XNhnOhOY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
