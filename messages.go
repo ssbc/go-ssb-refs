@@ -12,6 +12,8 @@ import (
 	"go.cryptoscope.co/margaret"
 )
 
+// Value describes a signed entry on a classical ssb feed.
+// The name 'value' comes from seeing them in (hashed) 'key' and 'value' pairs from database query results.
 type Value struct {
 	Previous  *MessageRef           `json:"previous"`
 	Author    FeedRef               `json:"author"`
