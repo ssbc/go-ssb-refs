@@ -22,6 +22,8 @@ const (
 	RefAlgoMessageSSB1 = "sha256"  // scuttlebutt happend anyway
 	RefAlgoBlobSSB1    = RefAlgoMessageSSB1
 
+	RefAlgoCloakedGroup = "cloaked"
+
 	RefAlgoFeedGabby    = "ggfeed-v1" // cbor based chain
 	RefAlgoMessageGabby = "ggmsg-v1"
 
@@ -97,6 +99,8 @@ func ParseRef(str string) (Ref, error) {
 			algo = RefAlgoMessageSSB1
 		case RefAlgoMessageGabby:
 			algo = RefAlgoMessageGabby
+		case RefAlgoCloakedGroup:
+			algo = RefAlgoCloakedGroup
 		default:
 			return nil, ErrInvalidRefAlgo
 		}
