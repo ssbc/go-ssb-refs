@@ -148,7 +148,7 @@ func (ref MessageRef) ShortRef() string {
 	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.Hash[:3]), ref.Algo)
 }
 
-func (ref MessageRef) Equal(other MessageRef) bool {
+func (ref MessageRef) Equal(other *MessageRef) bool {
 	if ref.Algo != other.Algo {
 		return false
 	}
@@ -175,7 +175,7 @@ func (mr *MessageRef) UnmarshalText(text []byte) error {
 	}
 	newRef, err := ParseMessageRef(string(text))
 	if err != nil {
-		return errors.Wrap(err, "message: unmarshal failed")
+		return errors.Wrapf(err, "message(%s): unmarshal failed", string(text))
 	}
 	*mr = *newRef
 	return nil

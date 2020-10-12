@@ -80,7 +80,7 @@ func (dcr DropContentRequest) Valid(log margaret.Log) bool {
 		return false
 	}
 
-	match := msg.Key().Equal(dcr.Hash)
+	match := msg.Key().Equal(&dcr.Hash)
 	if !match {
 		return false
 	}
@@ -270,6 +270,18 @@ type Post struct {
 	Root     *MessageRef `json:"root,omitempty"`
 	Branch   MessageRefs `json:"branch,omitempty"`
 	Mentions []Mention   `json:"mentions,omitempty"`
+
+	Tangles Tangles `json:"tangles,omitempty"`
+
+	// Recipients of a message
+	Recps MessageRefs `json:"recps,omitempty"`
+}
+
+type Tangles map[string]TanglePoint
+
+type TanglePoint struct {
+	Root     *MessageRef `json:"root"`
+	Previous MessageRefs `json:"previous"`
 }
 
 type AnyRef struct {
