@@ -5,7 +5,9 @@ import (
 	"sort"
 )
 
-type ByBranches struct {
+type ByPrevious struct {
+	TangleName string
+
 	Items []TangledPost
 
 	root   string
@@ -14,19 +16,19 @@ type ByBranches struct {
 
 type pointsToMap map[string][]string
 
-func (byBr *ByBranches) FillLookup() {
+func (byBr *ByPrevious) FillLookup() {
 	bf := make(pointsToMap, len(byBr.Items))
 
 	for _, m := range byBr.Items {
-		branches := m.Branches()
+		_, prev := m.Tangle(byBr.TangleName)
 
-		if branches == nil {
+		if prev == nil {
 			byBr.root = m.Key().Ref()
 			continue
 		}
 
-		var refs = make([]string, len(branches))
-		for j, br := range branches {
+		var refs = make([]string, len(prev))
+		for j, br := range prev {
 			refs[j] = br.Ref()
 		}
 		bf[m.Key().Ref()] = refs
@@ -38,11 +40,11 @@ func (byBr *ByBranches) FillLookup() {
 	}
 }
 
-func (bct ByBranches) Len() int {
+func (bct ByPrevious) Len() int {
 	return len(bct.Items)
 }
 
-func (bct ByBranches) currentIndex(key string) int {
+func (bct ByPrevious) currentIndex(key string) int {
 	for idxBr, findBr := range bct.Items {
 		if findBr.Key().Ref() == key {
 			return idxBr
@@ -51,7 +53,7 @@ func (bct ByBranches) currentIndex(key string) int {
 	return -1
 }
 
-func (bct ByBranches) pointsTo(x, y string) bool {
+func (bct ByPrevious) pointsTo(x, y string) bool {
 	pointsTo, has := bct.before[x]
 	if !has {
 		return false
@@ -68,7 +70,7 @@ func (bct ByBranches) pointsTo(x, y string) bool {
 	return false
 }
 
-func (bct ByBranches) hopsToRoot(key string, hop int) int {
+func (bct ByPrevious) hopsToRoot(key string, hop int) int {
 	if key == bct.root {
 		return hop
 	}
@@ -101,7 +103,7 @@ func (bct ByBranches) hopsToRoot(key string, hop int) int {
 	return found[len(found)-1]
 }
 
-func (bct ByBranches) Less(i int, j int) bool {
+func (bct ByPrevious) Less(i int, j int) bool {
 	msgI, msgJ := bct.Items[i], bct.Items[j]
 	keyI, keyJ := msgI.Key().Ref(), msgJ.Key().Ref()
 
@@ -119,13 +121,12 @@ func (bct ByBranches) Less(i int, j int) bool {
 	return false
 }
 
-func (bct ByBranches) Swap(i int, j int) {
+func (bct ByPrevious) Swap(i int, j int) {
 	bct.Items[i], bct.Items[j] = bct.Items[j], bct.Items[i]
 }
 
 type TangledPost interface {
 	Key() *MessageRef
 
-	Root() *MessageRef
-	Branches() []*MessageRef
+	Tangle(name string) (root *MessageRef, prev MessageRefs)
 }
