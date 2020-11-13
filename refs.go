@@ -12,8 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ed25519"
-
-	"go.cryptoscope.co/librarian"
 )
 
 // Some constant identifiers
@@ -273,19 +271,6 @@ type FeedRef struct {
 
 func (ref FeedRef) PubKey() ed25519.PublicKey {
 	return ref.ID
-}
-
-// StoredAddr returns the key under which this ref is stored in the multilog system
-func (ref FeedRef) StoredAddr() librarian.Addr {
-	sr, err := NewStorageRef(ref)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to make storedAddr"))
-	}
-	b, err := sr.Marshal()
-	if err != nil {
-		panic(errors.Wrap(err, "error while marshalling addr"))
-	}
-	return librarian.Addr(b)
 }
 
 func (ref FeedRef) Ref() string {
