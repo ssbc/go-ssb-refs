@@ -202,7 +202,7 @@ func (r *MessageRef) Scan(raw interface{}) error {
 func ParseMessageRef(s string) (*MessageRef, error) {
 	ref, err := ParseRef(s)
 	if err != nil {
-		return nil, errors.Wrap(err, "messageRef: failed to parse ref")
+		return nil, errors.Wrapf(err, "messageRef: failed to parse ref (%q)", s)
 	}
 	newRef, ok := ref.(*MessageRef)
 	if !ok {

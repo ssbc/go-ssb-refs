@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/shurcooL/go-goon"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,7 +72,7 @@ func TestParseRef(t *testing.T) {
 			input := a.Equal(tc.ref, tc.want.Ref(), "test %d input<>output failed", i)
 			want := a.Equal(tc.want.Ref(), r.Ref(), "test %d re-encode failed", i)
 			if !input || !want {
-				goon.Dump(r)
+				t.Logf("%+v", r)
 			}
 			t.Log(i, r.ShortRef())
 		} else {
