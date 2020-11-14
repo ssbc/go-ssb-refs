@@ -30,7 +30,6 @@ func TestBranchHelperHops(t *testing.T) {
 		if h := sorter.hopsToRoot(msgs[i].Key().Ref(), 0); h != i {
 			t.Error("wrong p1", h)
 		}
-
 	}
 }
 

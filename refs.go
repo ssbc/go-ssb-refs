@@ -1,18 +1,24 @@
 // SPDX-License-Identifier: MIT
 
+// Package refs strives to offer a couple of types and corresponding encoding code to help other go-based ssb projects to talk about message, feed and blob references without pulling in all of go-ssb and it's network and database code.
 package refs
 
 import (
 	"bytes"
 	"encoding"
 	"encoding/base64"
-	stderr "errors"
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ed25519"
 )
+
+// Ref is the abstract interface all reference types should implement.
+type Ref interface {
+	Ref() string      // returns the full reference
+	ShortRef() string // returns a shortend prefix
+}
 
 // Some constant identifiers
 const (
@@ -27,32 +33,6 @@ const (
 
 	RefAlgoContentGabby = "gabby-v1-content"
 )
-
-// Common errors for invalid references
-var (
-	ErrInvalidRef     = stderr.New("ssb: Invalid Ref")
-	ErrInvalidRefType = stderr.New("ssb: Invalid Ref Type")
-	ErrInvalidRefAlgo = stderr.New("ssb: Invalid Ref Algo")
-	ErrInvalidSig     = stderr.New("ssb: Invalid Signature")
-	ErrInvalidHash    = stderr.New("ssb: Invalid Hash")
-)
-
-type ErrRefLen struct {
-	algo string
-	n    int
-}
-
-func (e ErrRefLen) Error() string {
-	return fmt.Sprintf("ssb: Invalid reference len for %s: %d", e.algo, e.n)
-}
-
-func NewFeedRefLenError(n int) error {
-	return ErrRefLen{algo: RefAlgoFeedSSB1, n: n}
-}
-
-func NewHashLenError(n int) error {
-	return ErrRefLen{algo: RefAlgoMessageSSB1, n: n}
-}
 
 func ParseRef(str string) (Ref, error) {
 	if len(str) == 0 {
@@ -84,7 +64,7 @@ func ParseRef(str string) (Ref, error) {
 			return nil, ErrInvalidRefAlgo
 		}
 		if n := len(raw); n != 32 {
-			return nil, NewFeedRefLenError(n)
+			return nil, newFeedRefLenError(n)
 		}
 		return &FeedRef{
 			ID:   raw,
@@ -103,7 +83,7 @@ func ParseRef(str string) (Ref, error) {
 			return nil, ErrInvalidRefAlgo
 		}
 		if n := len(raw); n != 32 {
-			return nil, NewHashLenError(n)
+			return nil, newHashLenError(n)
 		}
 		return &MessageRef{
 			Hash: raw,
@@ -114,7 +94,7 @@ func ParseRef(str string) (Ref, error) {
 			return nil, ErrInvalidRefAlgo
 		}
 		if n := len(raw); n != 32 {
-			return nil, NewHashLenError(n)
+			return nil, newHashLenError(n)
 		}
 		return &BlobRef{
 			Hash: raw,
@@ -123,11 +103,6 @@ func ParseRef(str string) (Ref, error) {
 	}
 
 	return nil, ErrInvalidRefType
-}
-
-type Ref interface {
-	Ref() string
-	ShortRef() string
 }
 
 // MessageRef defines the content addressed version of a ssb message, identified it's hash.

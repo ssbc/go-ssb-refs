@@ -24,9 +24,9 @@ func TestParseRef(t *testing.T) {
 		{"@xxx.foo", ErrInvalidHash, nil},
 
 		{"%wayTooShort.sha256", ErrInvalidHash, nil},
-		{"&tooShort.sha256", NewHashLenError(6), nil},
-		{"@tooShort.ed25519", NewFeedRefLenError(6), nil},
-		{"&c29tZU5vbmVTZW5zZQo=.sha256", NewHashLenError(14), nil},
+		{"&tooShort.sha256", newHashLenError(6), nil},
+		{"@tooShort.ed25519", newFeedRefLenError(6), nil},
+		{"&c29tZU5vbmVTZW5zZQo=.sha256", newHashLenError(14), nil},
 
 		{"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.ed25519", nil, &FeedRef{
 			ID:   []byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
