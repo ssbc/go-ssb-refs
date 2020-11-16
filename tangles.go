@@ -5,47 +5,81 @@ import (
 	"sort"
 )
 
+// TangledPost is a utility type for ByPrevious' sorting functionality.
+type TangledPost interface {
+	Key() *MessageRef
+
+	Tangle(name string) (root *MessageRef, prev MessageRefs)
+}
+
+// ByPrevious offers sorting messages by their previous cipherlinks relation.
+// See https://github.com/ssbc/ssb-sort for more.
 type ByPrevious struct {
 	TangleName string
 
 	Items []TangledPost
 
-	root   string
-	before pointsToMap
+	root  string
+	after pointsToMap // message points to another (by previous field)
+	backl pointsToMap // these messages point to another (reverse from the above)
+}
+
+func (m pointsToMap) add(k, msg *MessageRef) {
+	refs := m[k.Ref()]
+	m[k.Ref()] = append(refs, msg.Ref())
+}
+
+// Heads on a sorted slice of messages returns a slice of message refs which are not referenced by any other.
+// Need to call FillLookup() before using this.
+func (by *ByPrevious) Heads() MessageRefs {
+	var r MessageRefs
+
+	for _, i := range by.Items {
+		if _, has := by.backl[i.Key().Ref()]; !has {
+			r = append(r, i.Key())
+		}
+	}
+
+	return r
 }
 
 type pointsToMap map[string][]string
 
-func (byBr *ByPrevious) FillLookup() {
-	bf := make(pointsToMap, len(byBr.Items))
+// FillLookup needs to be called before sort.Sort()ing the slice of messages.
+func (by *ByPrevious) FillLookup() {
+	after := make(pointsToMap, len(by.Items))
+	backl := make(pointsToMap, len(by.Items))
 
-	for _, m := range byBr.Items {
-		_, prev := m.Tangle(byBr.TangleName)
+	for _, m := range by.Items {
+		_, prev := m.Tangle(by.TangleName)
 
 		if prev == nil {
-			byBr.root = m.Key().Ref()
+			by.root = m.Key().Ref()
 			continue
 		}
 
 		var refs = make([]string, len(prev))
 		for j, br := range prev {
 			refs[j] = br.Ref()
+
+			// backlink
+			backl.add(br, m.Key())
 		}
-		bf[m.Key().Ref()] = refs
+		after[m.Key().Ref()] = refs
 	}
 
-	byBr.before = bf
-	if byBr.root == "" {
-		panic("no root?!")
+	by.after = after
+	by.backl = backl
+	if by.root == "" {
+		fmt.Println("debug: no root?!")
 	}
 }
 
-func (bct ByPrevious) Len() int {
-	return len(bct.Items)
-}
+// Len returns the number of messages, for sort.Sort.
+func (by ByPrevious) Len() int { return len(by.Items) }
 
-func (bct ByPrevious) currentIndex(key string) int {
-	for idxBr, findBr := range bct.Items {
+func (by ByPrevious) currentIndex(key string) int {
+	for idxBr, findBr := range by.Items {
 		if findBr.Key().Ref() == key {
 			return idxBr
 		}
@@ -53,8 +87,8 @@ func (bct ByPrevious) currentIndex(key string) int {
 	return -1
 }
 
-func (bct ByPrevious) pointsTo(x, y string) bool {
-	pointsTo, has := bct.before[x]
+func (by ByPrevious) pointsTo(x, y string) bool {
+	pointsTo, has := by.after[x]
 	if !has {
 		return false
 	}
@@ -63,34 +97,31 @@ func (bct ByPrevious) pointsTo(x, y string) bool {
 		if candidate == y {
 			return true
 		}
-		if bct.pointsTo(candidate, y) {
+		if by.pointsTo(candidate, y) {
 			return true
 		}
 	}
 	return false
 }
 
-func (bct ByPrevious) hopsToRoot(key string, hop int) int {
-	if key == bct.root {
+func (by ByPrevious) hopsToRoot(key string, hop int) int {
+	if key == by.root {
 		return hop
 	}
 
-	pointsTo, ok := bct.before[key]
+	pointsTo, ok := by.after[key]
 	if !ok {
 		panic("untangled message which isnt root:" + key)
 	}
 
-	fmt.Printf("toRoot(%s) h:%d (ptrs:%d)\n", key, hop, len(pointsTo))
-
 	var found []int // collect all paths for tie-breaking
 	for _, candidate := range pointsTo {
-		if candidate == bct.root {
+		if candidate == by.root {
 			found = append(found, hop+1)
 			continue
 		}
 
-		fmt.Println("\tlooking for:", candidate)
-		if h := bct.hopsToRoot(candidate, hop+1); h > 0 {
+		if h := by.hopsToRoot(candidate, hop+1); h > 0 {
 			// TODO: fill up cache of these results
 			found = append(found, h)
 		}
@@ -103,30 +134,25 @@ func (bct ByPrevious) hopsToRoot(key string, hop int) int {
 	return found[len(found)-1]
 }
 
-func (bct ByPrevious) Less(i int, j int) bool {
-	msgI, msgJ := bct.Items[i], bct.Items[j]
+// Less decides if message i is before j by looking up how many hops it takes from them to the root.
+// TODO: tiebraker
+func (by ByPrevious) Less(i int, j int) bool {
+	msgI, msgJ := by.Items[i], by.Items[j]
 	keyI, keyJ := msgI.Key().Ref(), msgJ.Key().Ref()
 
-	if bct.pointsTo(keyI, keyJ) {
+	if by.pointsTo(keyI, keyJ) {
 		return false
 	}
 
-	hops_i, hops_j := bct.hopsToRoot(keyI, 0), bct.hopsToRoot(keyJ, 0)
-	if hops_i < hops_j {
+	hopsI, hopsJ := by.hopsToRoot(keyI, 0), by.hopsToRoot(keyJ, 0)
+	if hopsI < hopsJ {
 		return true
 	}
-	fmt.Println(keyI, hops_i)
-	fmt.Println(keyJ, hops_j)
 
 	return false
 }
 
-func (bct ByPrevious) Swap(i int, j int) {
-	bct.Items[i], bct.Items[j] = bct.Items[j], bct.Items[i]
-}
-
-type TangledPost interface {
-	Key() *MessageRef
-
-	Tangle(name string) (root *MessageRef, prev MessageRefs)
+// Swap switches the two items (for sort.Sort)
+func (by ByPrevious) Swap(i int, j int) {
+	by.Items[i], by.Items[j] = by.Items[j], by.Items[i]
 }
