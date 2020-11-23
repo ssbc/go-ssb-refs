@@ -383,6 +383,8 @@ type KeyValueRaw struct {
 	Key_      *MessageRef           `json:"key"`
 	Value     Value                 `json:"value"`
 	Timestamp encodedTime.Millisecs `json:"timestamp"`
+
+	Meta map[string]interface{} `json:"meta,omitempty"`
 }
 
 type KeyValueAsMap struct {
