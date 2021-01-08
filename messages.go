@@ -22,6 +22,8 @@ type Value struct {
 	Hash      string                `json:"hash"`
 	Content   json.RawMessage       `json:"content"`
 	Signature string                `json:"signature"`
+
+	Meta map[string]interface{} `json:"meta,omitempty"`
 }
 
 // Message allows accessing message aspects without known the feed type
@@ -130,7 +132,7 @@ func (c *Contact) UnmarshalJSON(b []byte) error {
 	var potential map[string]interface{}
 	err := json.Unmarshal(b, &potential)
 	if err != nil {
-		return errors.Wrap(err, "contact: map stage failed")
+		return fmt.Errorf("contact: map stage failed: %w", err)
 	}
 
 	t, ok := potential["type"].(string)
@@ -151,14 +153,14 @@ func (c *Contact) UnmarshalJSON(b []byte) error {
 
 	newC.Contact, err = ParseFeedRef(contact)
 	if err != nil {
-		return errors.Wrap(err, "contact: failed to parse contact field")
+		return fmt.Errorf("contact: failed to parse contact field: %w", err)
 	}
 
 	newC.Following, _ = potential["following"].(bool)
 	newC.Blocking, _ = potential["blocking"].(bool)
 
 	if newC.Following && newC.Blocking {
-		return errors.Errorf("invalid contact message")
+		return fmt.Errorf("invalid contact message")
 	}
 
 	*c = *newC
@@ -199,7 +201,7 @@ func (a *About) UnmarshalJSON(b []byte) error {
 	var potential map[string]interface{}
 	err = json.Unmarshal(b, &potential)
 	if err != nil {
-		return errors.Wrap(err, "about: map stage failed")
+		return fmt.Errorf("about: map stage failed: %w", err)
 	}
 
 	t, ok := potential["type"].(string)
@@ -220,7 +222,7 @@ func (a *About) UnmarshalJSON(b []byte) error {
 
 	newA.About, err = ParseFeedRef(about)
 	if err != nil {
-		return errors.Wrap(err, "about: who?")
+		return fmt.Errorf("about: who?: %w", err)
 	}
 
 	if newName, ok := potential["name"].(string); ok {
@@ -264,6 +266,14 @@ type ValuePost struct {
 	Content Post `json:"content"`
 }
 
+// NewPost creates a new Post with the text field set to the passed string
+func NewPost(text string) Post {
+	return Post{
+		Type: "post",
+		Text: text,
+	}
+}
+
 type Post struct {
 	Type     string      `json:"type"`
 	Text     string      `json:"text"`
@@ -283,63 +293,6 @@ type TanglePoint struct {
 	Root     *MessageRef `json:"root"`
 	Previous MessageRefs `json:"previous"`
 }
-
-type AnyRef struct {
-	r Ref
-}
-
-func (ar AnyRef) ShortRef() string {
-	if ar.r == nil {
-		panic("empty ref")
-	}
-	return ar.r.ShortRef()
-}
-
-func (ar AnyRef) Ref() string {
-	if ar.r == nil {
-		panic("empty ref")
-	}
-	return ar.r.Ref()
-}
-
-func (ar AnyRef) IsBlob() (*BlobRef, bool) {
-	br, ok := ar.r.(*BlobRef)
-	return br, ok
-}
-
-func (ar *AnyRef) MarshalJSON() ([]byte, error) {
-	if ar.r == nil {
-		return nil, ErrInvalidRef
-	}
-	refStr := ar.Ref()
-	return []byte(`"` + refStr + `"`), nil
-}
-
-func (ar *AnyRef) UnmarshalJSON(b []byte) error {
-	if len(b) < 53 {
-		return ErrInvalidRef
-	}
-
-	var refStr string
-	err := json.Unmarshal(b, &refStr)
-	if err != nil {
-		return fmt.Errorf("ssb/anyRef: not a valid JSON string (%w)", err)
-	}
-
-	newRef, err := ParseRef(refStr)
-	if err != nil {
-		return err
-	}
-
-	ar.r = newRef
-	return nil
-}
-
-var (
-	_ json.Marshaler   = (*AnyRef)(nil)
-	_ json.Unmarshaler = (*AnyRef)(nil)
-	_ Ref              = (*AnyRef)(nil)
-)
 
 type Mention struct {
 	Link AnyRef `json:"link,omitempty"`
@@ -383,8 +336,6 @@ type KeyValueRaw struct {
 	Key_      *MessageRef           `json:"key"`
 	Value     Value                 `json:"value"`
 	Timestamp encodedTime.Millisecs `json:"timestamp"`
-
-	Meta map[string]interface{} `json:"meta,omitempty"`
 }
 
 type KeyValueAsMap struct {

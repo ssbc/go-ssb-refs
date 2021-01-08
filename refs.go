@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -122,8 +123,16 @@ func (ref MessageRef) ShortRef() string {
 }
 
 func (ref MessageRef) Equal(other *MessageRef) bool {
+	if other == nil {
+		return false
+	}
+
 	if ref.Algo != other.Algo {
 		return false
+	}
+
+	if ref.Hash == nil || other.Hash == nil {
+		return true
 	}
 
 	return bytes.Equal(ref.Hash, other.Hash)
@@ -158,18 +167,18 @@ func (r *MessageRef) Scan(raw interface{}) error {
 	switch v := raw.(type) {
 	case []byte:
 		if len(v) != 32 {
-			return errors.Errorf("msgRef/Scan: wrong length: %d", len(v))
+			return fmt.Errorf("msgRef/Scan: wrong length: %d", len(v))
 		}
 		r.Hash = v
 		r.Algo = RefAlgoMessageSSB1
 	case string:
 		mr, err := ParseMessageRef(v)
 		if err != nil {
-			return errors.Wrap(err, "msgRef/Scan: failed to serialze from string")
+			return fmt.Errorf("msgRef/Scan: failed to serialze from string: %w", err)
 		}
 		*r = *mr
 	default:
-		return errors.Errorf("msgRef/Scan: unhandled type %T", raw)
+		return fmt.Errorf("msgRef/Scan: unhandled type %T", raw)
 	}
 	return nil
 }
@@ -181,7 +190,7 @@ func ParseMessageRef(s string) (*MessageRef, error) {
 	}
 	newRef, ok := ref.(*MessageRef)
 	if !ok {
-		return nil, errors.Errorf("messageRef: not a message! %T", ref)
+		return nil, fmt.Errorf("messageRef: not a message! %T", ref)
 	}
 	return newRef, nil
 }
@@ -230,7 +239,7 @@ func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 		var err error
 		newArr[0], err = ParseMessageRef(string(text[1 : len(text)-1]))
 		if err != nil {
-			return errors.Wrap(err, "messageRefs single unmarshal failed")
+			return fmt.Errorf("messageRefs single unmarshal failed: %w", err)
 		}
 
 		*mr = newArr
@@ -267,7 +276,7 @@ func (ref FeedRef) Equal(b *FeedRef) bool {
 func (ref FeedRef) Copy() *FeedRef {
 	newRef, err := ParseFeedRef(ref.Ref())
 	if err != nil {
-		panic(errors.Wrap(err, "failed to copy existing ref"))
+		panic(fmt.Errorf("failed to copy existing ref: %w", err))
 	}
 	return newRef
 }
@@ -300,7 +309,7 @@ func (r *FeedRef) Scan(raw interface{}) error {
 
 	// case []byte:
 	// 	if len(v) != 32 {
-	// 		return errors.Errorf("feedRef/Scan: wrong length: %d", len(v))
+	// 		return fmt.Errorf("feedRef/Scan: wrong length: %d", len(v))
 	// 	}
 	// 	(*r).ID = v
 	// 	(*r).Algo = "ed25519"
@@ -308,11 +317,11 @@ func (r *FeedRef) Scan(raw interface{}) error {
 	case string:
 		fr, err := ParseFeedRef(v)
 		if err != nil {
-			return errors.Wrap(err, "feedRef/Scan: failed to serialize from string")
+			return fmt.Errorf("feedRef/Scan: failed to serialize from string: %w", err)
 		}
 		*r = *fr
 	default:
-		return errors.Errorf("feedRef/Scan: unhandled type %T (see TODO)", raw)
+		return fmt.Errorf("feedRef/Scan: unhandled type %T (see TODO)", raw)
 	}
 	return nil
 }
@@ -325,7 +334,7 @@ func ParseFeedRef(s string) (*FeedRef, error) {
 	}
 	newRef, ok := ref.(*FeedRef)
 	if !ok {
-		return nil, errors.Errorf("feedRef: not a feed! %T", ref)
+		return nil, fmt.Errorf("feedRef: not a feed! %T", ref)
 	}
 	return newRef, nil
 }
@@ -353,7 +362,7 @@ func ParseBlobRef(s string) (*BlobRef, error) {
 	}
 	newRef, ok := ref.(*BlobRef)
 	if !ok {
-		return nil, errors.Errorf("blobRef: not a blob! %T", ref)
+		return nil, fmt.Errorf("blobRef: not a blob! %T", ref)
 	}
 	return newRef, nil
 }
@@ -367,10 +376,10 @@ func (ref BlobRef) Equal(b *BlobRef) bool {
 
 func (br BlobRef) IsValid() error {
 	if br.Algo != "sha256" {
-		return errors.Errorf("unknown hash algorithm %q", br.Algo)
+		return fmt.Errorf("unknown hash algorithm %q", br.Algo)
 	}
 	if len(br.Hash) != 32 {
-		return errors.Errorf("expected hash length 32, got %v", len(br.Hash))
+		return fmt.Errorf("expected hash length 32, got %v", len(br.Hash))
 	}
 	return nil
 }
@@ -388,7 +397,7 @@ func (br *BlobRef) UnmarshalText(text []byte) error {
 	}
 	newBR, err := ParseBlobRef(string(text))
 	if err != nil {
-		return errors.Wrap(err, " BlobRef/UnmarshalText failed")
+		return fmt.Errorf(" BlobRef/UnmarshalText failed: %w", err)
 	}
 	*br = *newBR
 	return nil
@@ -419,7 +428,7 @@ func (ref ContentRef) MarshalBinary() ([]byte, error) {
 
 func (ref *ContentRef) UnmarshalBinary(data []byte) error {
 	if n := len(data); n != 33 {
-		return errors.Errorf("contentRef: invalid len:%d", n)
+		return fmt.Errorf("contentRef: invalid len:%d", n)
 	}
 	var newRef ContentRef
 	newRef.Hash = make([]byte, 32)
@@ -436,3 +445,70 @@ func (ref *ContentRef) UnmarshalBinary(data []byte) error {
 	*ref = newRef
 	return nil
 }
+
+type AnyRef struct {
+	r Ref
+}
+
+func (ar AnyRef) ShortRef() string {
+	if ar.r == nil {
+		panic("empty ref")
+	}
+	return ar.r.ShortRef()
+}
+
+func (ar AnyRef) Ref() string {
+	if ar.r == nil {
+		panic("empty ref")
+	}
+	return ar.r.Ref()
+}
+
+func (ar AnyRef) IsBlob() (*BlobRef, bool) {
+	br, ok := ar.r.(*BlobRef)
+	return br, ok
+}
+
+func (ar AnyRef) IsFeed() (*FeedRef, bool) {
+	r, ok := ar.r.(*FeedRef)
+	return r, ok
+}
+
+func (ar AnyRef) IsMessage() (*MessageRef, bool) {
+	r, ok := ar.r.(*MessageRef)
+	return r, ok
+}
+
+func (ar *AnyRef) MarshalJSON() ([]byte, error) {
+	if ar.r == nil {
+		return nil, ErrInvalidRef
+	}
+	refStr := ar.Ref()
+	return []byte(`"` + refStr + `"`), nil
+}
+
+func (ar *AnyRef) UnmarshalJSON(b []byte) error {
+	if len(b) < 53 {
+		return ErrInvalidRef
+	}
+
+	var refStr string
+	err := json.Unmarshal(b, &refStr)
+	if err != nil {
+		return fmt.Errorf("ssb/anyRef: not a valid JSON string (%w)", err)
+	}
+
+	newRef, err := ParseRef(refStr)
+	if err != nil {
+		return err
+	}
+
+	ar.r = newRef
+	return nil
+}
+
+var (
+	_ json.Marshaler   = (*AnyRef)(nil)
+	_ json.Unmarshaler = (*AnyRef)(nil)
+	_ Ref              = (*AnyRef)(nil)
+)

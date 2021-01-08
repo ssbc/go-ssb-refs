@@ -1,7 +1,6 @@
 package refs
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -70,9 +69,6 @@ func (by *ByPrevious) FillLookup() {
 
 	by.after = after
 	by.backl = backl
-	if by.root == "" {
-		fmt.Println("debug: no root?!")
-	}
 }
 
 // Len returns the number of messages, for sort.Sort.
