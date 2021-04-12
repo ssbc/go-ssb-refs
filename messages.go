@@ -256,8 +256,8 @@ func (ar AnyRef) Algo() RefAlgo {
 	return ar.r.Algo()
 }
 
-func (ar AnyRef) IsBlob() (*BlobRef, bool) {
-	br, ok := ar.r.(*BlobRef)
+func (ar AnyRef) IsBlob() (BlobRef, bool) {
+	br, ok := ar.r.(BlobRef)
 	return br, ok
 }
 

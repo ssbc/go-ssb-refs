@@ -41,17 +41,18 @@ type fakeMessage struct {
 }
 
 func (fm fakeMessage) Key() MessageRef {
-	return MessageRef{
-		hash: []byte(fm.key),
+	r := MessageRef{
 		algo: "fake",
 	}
+	copy(r.hash[:], fm.key)
+	return r
 }
 
 func (fm fakeMessage) Tangle(_ string) (MessageRef, MessageRefs) {
 	root := MessageRef{
-		hash: []byte(fm.root),
 		algo: "fake",
 	}
+	copy(root.hash[:], fm.root)
 
 	n := len(fm.prev)
 	if n == 0 {
@@ -60,10 +61,8 @@ func (fm fakeMessage) Tangle(_ string) (MessageRef, MessageRefs) {
 
 	brs := make(MessageRefs, n)
 	for i, b := range fm.prev {
-		brs[i] = MessageRef{
-			hash: []byte(b),
-			algo: "fake",
-		}
+		brs[i] = MessageRef{algo: "fake"}
+		copy(brs[i].hash[:], []byte(b))
 	}
 	return root, brs
 }

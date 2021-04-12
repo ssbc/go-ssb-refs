@@ -67,11 +67,8 @@ func ParseRef(str string) (Ref, error) {
 		if n := len(raw); n != 32 {
 			return nil, newFeedRefLenError(n)
 		}
-		newRef := FeedRef{
-			algo: algo,
-		}
+		newRef := FeedRef{algo: algo}
 		copy(newRef.id[:], raw)
-
 		return newRef, nil
 	case "%":
 		var algo RefAlgo
@@ -88,10 +85,9 @@ func ParseRef(str string) (Ref, error) {
 		if n := len(raw); n != 32 {
 			return nil, newHashLenError(n)
 		}
-		return MessageRef{
-			hash: raw,
-			algo: algo,
-		}, nil
+		newMsg := MessageRef{algo: algo}
+		copy(newMsg.hash[:], raw)
+		return newMsg, nil
 	case "&":
 		if RefAlgo(split[1]) != RefAlgoBlobSSB1 {
 			return nil, ErrInvalidRefAlgo
@@ -99,10 +95,9 @@ func ParseRef(str string) (Ref, error) {
 		if n := len(raw); n != 32 {
 			return nil, newHashLenError(n)
 		}
-		return &BlobRef{
-			hash: raw,
-			algo: RefAlgoBlobSSB1,
-		}, nil
+		newBlob := BlobRef{algo: RefAlgoBlobSSB1}
+		copy(newBlob.hash[:], raw)
+		return newBlob, nil
 	}
 
 	return nil, ErrInvalidRefType
@@ -110,13 +105,13 @@ func ParseRef(str string) (Ref, error) {
 
 // MessageRef defines the content addressed version of a ssb message, identified it's hash.
 type MessageRef struct {
-	hash []byte
+	hash [32]byte
 	algo RefAlgo
 }
 
 // Ref prints the full identifieir
 func (ref MessageRef) Ref() string {
-	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash), ref.algo)
+	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
 }
 
 // ShortRef prints a shortend version
@@ -133,7 +128,7 @@ func (ref MessageRef) Equal(other MessageRef) bool {
 		return false
 	}
 
-	return bytes.Equal(ref.hash, other.hash)
+	return bytes.Equal(ref.hash[:], other.hash[:])
 }
 
 var (
@@ -167,7 +162,7 @@ func (r *MessageRef) Scan(raw interface{}) error {
 		if len(v) != 32 {
 			return fmt.Errorf("msgRef/Scan: wrong length: %d", len(v))
 		}
-		r.hash = v
+		copy(r.hash[:], v)
 		r.algo = RefAlgoMessageSSB1
 	case string:
 		mr, err := ParseMessageRef(v)
@@ -344,13 +339,13 @@ func ParseFeedRef(s string) (*FeedRef, error) {
 
 // BlobRef defines a static binary attachment reference, identified it's hash.
 type BlobRef struct {
-	hash []byte
+	hash [32]byte
 	algo RefAlgo
 }
 
 // Ref returns the BlobRef with the sigil &, it's base64 encoded hash and the used algo (currently only sha256)
 func (ref BlobRef) Ref() string {
-	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.hash), ref.algo)
+	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
 }
 
 func (ref BlobRef) ShortRef() string {
@@ -378,7 +373,7 @@ func (ref BlobRef) Equal(b BlobRef) bool {
 	if ref.algo != b.algo {
 		return false
 	}
-	return bytes.Equal(ref.hash, b.hash)
+	return bytes.Equal(ref.hash[:], b.hash[:])
 }
 
 func (br BlobRef) IsValid() error {
