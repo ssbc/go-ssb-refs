@@ -18,20 +18,24 @@ import (
 type Ref interface {
 	Ref() string      // returns the full reference
 	ShortRef() string // returns a shortend prefix
+
+	Algo() RefAlgo
 }
+
+type RefAlgo string
 
 // Some constant identifiers
 const (
-	RefAlgoFeedSSB1    = "ed25519" // ssb v1 (legacy, crappy encoding)
-	RefAlgoMessageSSB1 = "sha256"  // scuttlebutt happend anyway
-	RefAlgoBlobSSB1    = RefAlgoMessageSSB1
+	RefAlgoFeedSSB1    RefAlgo = "ed25519" // ssb v1 (legacy, crappy encoding)
+	RefAlgoMessageSSB1 RefAlgo = "sha256"  // scuttlebutt happend anyway
+	RefAlgoBlobSSB1    RefAlgo = RefAlgoMessageSSB1
 
-	RefAlgoCloakedGroup = "cloaked"
+	RefAlgoCloakedGroup RefAlgo = "cloaked"
 
-	RefAlgoFeedGabby    = "ggfeed-v1" // cbor based chain
-	RefAlgoMessageGabby = "ggmsg-v1"
+	RefAlgoFeedGabby    RefAlgo = "ggfeed-v1" // cbor based chain
+	RefAlgoMessageGabby RefAlgo = "ggmsg-v1"
 
-	RefAlgoContentGabby = "gabby-v1-content"
+	RefAlgoContentGabby RefAlgo = "gabby-v1-content"
 )
 
 func ParseRef(str string) (Ref, error) {
@@ -51,8 +55,8 @@ func ParseRef(str string) (Ref, error) {
 
 	switch string(str[0]) {
 	case "@":
-		var algo string
-		switch split[1] {
+		var algo RefAlgo
+		switch RefAlgo(split[1]) {
 		case RefAlgoFeedSSB1:
 			algo = RefAlgoFeedSSB1
 		case RefAlgoFeedGabby:
@@ -63,13 +67,15 @@ func ParseRef(str string) (Ref, error) {
 		if n := len(raw); n != 32 {
 			return nil, newFeedRefLenError(n)
 		}
-		return &FeedRef{
-			ID:   raw,
-			Algo: algo,
-		}, nil
+		newRef := FeedRef{
+			algo: algo,
+		}
+		copy(newRef.id[:], raw)
+
+		return newRef, nil
 	case "%":
-		var algo string
-		switch split[1] {
+		var algo RefAlgo
+		switch RefAlgo(split[1]) {
 		case RefAlgoMessageSSB1:
 			algo = RefAlgoMessageSSB1
 		case RefAlgoMessageGabby:
@@ -82,20 +88,20 @@ func ParseRef(str string) (Ref, error) {
 		if n := len(raw); n != 32 {
 			return nil, newHashLenError(n)
 		}
-		return &MessageRef{
-			Hash: raw,
-			Algo: algo,
+		return MessageRef{
+			hash: raw,
+			algo: algo,
 		}, nil
 	case "&":
-		if split[1] != RefAlgoBlobSSB1 {
+		if RefAlgo(split[1]) != RefAlgoBlobSSB1 {
 			return nil, ErrInvalidRefAlgo
 		}
 		if n := len(raw); n != 32 {
 			return nil, newHashLenError(n)
 		}
 		return &BlobRef{
-			Hash: raw,
-			Algo: RefAlgoBlobSSB1,
+			hash: raw,
+			algo: RefAlgoBlobSSB1,
 		}, nil
 	}
 
@@ -104,34 +110,30 @@ func ParseRef(str string) (Ref, error) {
 
 // MessageRef defines the content addressed version of a ssb message, identified it's hash.
 type MessageRef struct {
-	Hash []byte
-	Algo string
+	hash []byte
+	algo RefAlgo
 }
 
 // Ref prints the full identifieir
 func (ref MessageRef) Ref() string {
-	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.Hash), ref.Algo)
+	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash), ref.Algo)
 }
 
 // ShortRef prints a shortend version
 func (ref MessageRef) ShortRef() string {
-	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.Hash[:3]), ref.Algo)
+	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.Algo)
 }
 
-func (ref MessageRef) Equal(other *MessageRef) bool {
-	if other == nil {
+func (ref MessageRef) Algo() RefAlgo {
+	return ref.algo
+}
+
+func (ref MessageRef) Equal(other MessageRef) bool {
+	if ref.algo != other.algo {
 		return false
 	}
 
-	if ref.Algo != other.Algo {
-		return false
-	}
-
-	if ref.Hash == nil || other.Hash == nil {
-		return true
-	}
-
-	return bytes.Equal(ref.Hash, other.Hash)
+	return bytes.Equal(ref.hash, other.hash)
 }
 
 var (
@@ -140,7 +142,7 @@ var (
 )
 
 func (mr MessageRef) MarshalText() ([]byte, error) {
-	if len(mr.Hash) == 0 {
+	if len(mr.hash) == 0 {
 		return []byte{}, nil
 	}
 	return []byte(mr.Ref()), nil
@@ -165,8 +167,8 @@ func (r *MessageRef) Scan(raw interface{}) error {
 		if len(v) != 32 {
 			return fmt.Errorf("msgRef/Scan: wrong length: %d", len(v))
 		}
-		r.Hash = v
-		r.Algo = RefAlgoMessageSSB1
+		r.hash = v
+		r.algo = RefAlgoMessageSSB1
 	case string:
 		mr, err := ParseMessageRef(v)
 		if err != nil {
@@ -246,28 +248,32 @@ func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 
 // FeedRef defines a publickey as ID with a specific algorithm (currently only ed25519)
 type FeedRef struct {
-	ID   []byte
-	Algo string
+	id   [32]byte
+	algo RefAlgo
 }
 
 func (ref FeedRef) PubKey() ed25519.PublicKey {
-	return ref.ID
+	return ref.id[:]
 }
 
 func (ref FeedRef) Ref() string {
-	return fmt.Sprintf("@%s.%s", base64.StdEncoding.EncodeToString(ref.ID), ref.Algo)
+	return fmt.Sprintf("@%s.%s", base64.StdEncoding.EncodeToString(ref.id[:]), ref.algo)
 }
 
 func (ref FeedRef) ShortRef() string {
-	return fmt.Sprintf("<@%s.%s>", base64.StdEncoding.EncodeToString(ref.ID[:3]), ref.Algo)
+	return fmt.Sprintf("<@%s.%s>", base64.StdEncoding.EncodeToString(ref.id[:3]), ref.algo)
 }
 
-func (ref FeedRef) Equal(b *FeedRef) bool {
+func (ref FeedRef) Algo() RefAlgo {
+	return ref.algo
+}
+
+func (ref FeedRef) Equal(b FeedRef) bool {
 	// TODO: invset time in shs1.1 to signal the format correctly
 	// if ref.Algo != b.Algo {
 	// 	return false
 	// }
-	return bytes.Equal(ref.ID, b.ID)
+	return bytes.Equal(ref.id[:], b.id[:])
 }
 
 func (ref FeedRef) Copy() *FeedRef {
@@ -338,17 +344,21 @@ func ParseFeedRef(s string) (*FeedRef, error) {
 
 // BlobRef defines a static binary attachment reference, identified it's hash.
 type BlobRef struct {
-	Hash []byte
-	Algo string
+	hash []byte
+	algo RefAlgo
 }
 
 // Ref returns the BlobRef with the sigil &, it's base64 encoded hash and the used algo (currently only sha256)
 func (ref BlobRef) Ref() string {
-	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.Hash), ref.Algo)
+	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.hash), ref.Algo)
 }
 
 func (ref BlobRef) ShortRef() string {
-	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(ref.Hash[:3]), ref.Algo)
+	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.Algo)
+}
+
+func (ref BlobRef) Algo() RefAlgo {
+	return ref.algo
 }
 
 // ParseBlobRef uses ParseRef and checks that it returns a *BlobRef
@@ -364,19 +374,19 @@ func ParseBlobRef(s string) (*BlobRef, error) {
 	return newRef, nil
 }
 
-func (ref BlobRef) Equal(b *BlobRef) bool {
+func (ref BlobRef) Equal(b BlobRef) bool {
 	if ref.Algo != b.Algo {
 		return false
 	}
-	return bytes.Equal(ref.Hash, b.Hash)
+	return bytes.Equal(ref.hash, b.hash)
 }
 
 func (br BlobRef) IsValid() error {
-	if br.Algo != "sha256" {
-		return fmt.Errorf("unknown hash algorithm %q", br.Algo)
+	if br.algo != RefAlgoBlobSSB1 {
+		return fmt.Errorf("unknown hash algorithm %q", br.algo)
 	}
-	if len(br.Hash) != 32 {
-		return fmt.Errorf("expected hash length 32, got %v", len(br.Hash))
+	if len(br.hash) != 32 {
+		return fmt.Errorf("expected hash length 32, got %v", len(br.hash))
 	}
 	return nil
 }
@@ -397,49 +407,6 @@ func (br *BlobRef) UnmarshalText(text []byte) error {
 		return fmt.Errorf(" BlobRef/UnmarshalText failed: %w", err)
 	}
 	*br = *newBR
-	return nil
-}
-
-// ContentRef defines the hashed content of a message
-type ContentRef struct {
-	Hash []byte
-	Algo string
-}
-
-func (ref ContentRef) Ref() string {
-	return fmt.Sprintf("!%s.%s", base64.StdEncoding.EncodeToString(ref.Hash), ref.Algo)
-}
-
-func (ref ContentRef) ShortRef() string {
-	return fmt.Sprintf("<!%s.%s>", base64.StdEncoding.EncodeToString(ref.Hash[:3]), ref.Algo)
-}
-
-func (ref ContentRef) MarshalBinary() ([]byte, error) {
-	switch ref.Algo {
-	case RefAlgoContentGabby:
-		return append([]byte{0x02}, ref.Hash...), nil
-	default:
-		return nil, fmt.Errorf("contentRef/Marshal: invalid binref type: %s", ref.Algo)
-	}
-}
-
-func (ref *ContentRef) UnmarshalBinary(data []byte) error {
-	if n := len(data); n != 33 {
-		return fmt.Errorf("contentRef: invalid len:%d", n)
-	}
-	var newRef ContentRef
-	newRef.Hash = make([]byte, 32)
-	switch data[0] {
-	case 0x02:
-		newRef.Algo = RefAlgoContentGabby
-	default:
-		return fmt.Errorf("unmarshal: invalid contentRef type: %x", data[0])
-	}
-	n := copy(newRef.Hash, data[1:])
-	if n != 32 {
-		return fmt.Errorf("unmarshal: invalid contentRef size: %d", n)
-	}
-	*ref = newRef
 	return nil
 }
 
