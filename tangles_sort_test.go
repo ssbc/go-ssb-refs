@@ -1,4 +1,4 @@
-package refs_test
+package refs
 
 import (
 	"math/rand"
@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	refs "go.mindeco.de/ssb-refs"
 )
 
 func TestBranchSequential(t *testing.T) {
@@ -23,13 +21,13 @@ func TestBranchSequential(t *testing.T) {
 	})
 
 	// stupid interface wrapping
-	tp := make([]refs.TangledPost, len(msgs))
+	tp := make([]TangledPost, len(msgs))
 	for i, m := range msgs {
-		tp[i] = refs.TangledPost(m)
+		tp[i] = TangledPost(m)
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := refs.ByPrevious{Items: tp}
+	sorter := ByPrevious{Items: tp}
 	sorter.FillLookup()
 	sort.Sort(sorter)
 
@@ -45,7 +43,7 @@ func TestBranchSequential(t *testing.T) {
 
 	h := sorter.Heads()
 	require.Len(t, h, 1)
-	require.EqualValues(t, string(h[0].Hash), "p4", "wrong head")
+	require.EqualValues(t, string(h[0].hash), "p4", "wrong head")
 }
 
 func TestBranchConcurrent(t *testing.T) {
@@ -60,13 +58,13 @@ func TestBranchConcurrent(t *testing.T) {
 	})
 
 	// stupid interface wrapping
-	tp := make([]refs.TangledPost, len(msgs))
+	tp := make([]TangledPost, len(msgs))
 	for i, m := range msgs {
-		tp[i] = refs.TangledPost(m)
+		tp[i] = TangledPost(m)
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := refs.ByPrevious{Items: tp}
+	sorter := ByPrevious{Items: tp}
 	sorter.FillLookup()
 	sort.Sort(sorter)
 
@@ -87,7 +85,7 @@ func TestBranchConcurrent(t *testing.T) {
 	// for >2 this should be sorted by key
 	var headKeys []string
 	for _, m := range h {
-		headKeys = append(headKeys, string(m.Hash))
+		headKeys = append(headKeys, string(m.hash))
 	}
 	if headKeys[0] == "a1" && headKeys[1] == "b1" {
 		t.Log("version x")
@@ -111,13 +109,13 @@ func TestBranchMerge(t *testing.T) {
 	})
 
 	// stupid interface wrapping
-	tp := make([]refs.TangledPost, len(msgs))
+	tp := make([]TangledPost, len(msgs))
 	for i, m := range msgs {
-		tp[i] = refs.TangledPost(m)
+		tp[i] = TangledPost(m)
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := refs.ByPrevious{Items: tp}
+	sorter := ByPrevious{Items: tp}
 	sorter.FillLookup()
 	sort.Sort(sorter)
 
@@ -135,7 +133,7 @@ func TestBranchMerge(t *testing.T) {
 
 	h := sorter.Heads()
 	require.Len(t, h, 1)
-	require.Equal(t, "p2", string(h[0].Hash))
+	require.Equal(t, "p2", string(h[0].hash))
 }
 
 func TestBranchMergeOpen(t *testing.T) {
@@ -159,13 +157,13 @@ func TestBranchMergeOpen(t *testing.T) {
 	})
 
 	// stupid interface wrapping
-	tp := make([]refs.TangledPost, len(msgs))
+	tp := make([]TangledPost, len(msgs))
 	for i, m := range msgs {
-		tp[i] = refs.TangledPost(m)
+		tp[i] = TangledPost(m)
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := refs.ByPrevious{Items: tp}
+	sorter := ByPrevious{Items: tp}
 	sorter.FillLookup()
 	sort.Sort(sorter)
 
@@ -173,7 +171,7 @@ func TestBranchMergeOpen(t *testing.T) {
 	require.Len(t, h, 2)
 	var keys []string
 	for _, hs := range h {
-		keys = append(keys, string(hs.Hash))
+		keys = append(keys, string(hs.hash))
 	}
 	sort.Strings(keys)
 	require.Equal(t, []string{"c2", "d1"}, keys)
@@ -201,13 +199,13 @@ func TestBranchMergeOpenTwo(t *testing.T) {
 	})
 
 	// stupid interface wrapping
-	tp := make([]refs.TangledPost, len(msgs))
+	tp := make([]TangledPost, len(msgs))
 	for i, m := range msgs {
-		tp[i] = refs.TangledPost(m)
+		tp[i] = TangledPost(m)
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := refs.ByPrevious{Items: tp}
+	sorter := ByPrevious{Items: tp}
 	sorter.FillLookup()
 	sort.Sort(sorter)
 
@@ -215,7 +213,7 @@ func TestBranchMergeOpenTwo(t *testing.T) {
 	require.Len(t, h, 2)
 	var keys []string
 	for _, hs := range h {
-		keys = append(keys, string(hs.Hash))
+		keys = append(keys, string(hs.hash))
 	}
 	sort.Strings(keys)
 	require.Equal(t, []string{"b2", "c2"}, keys)
@@ -245,19 +243,19 @@ func TestBranchMergeMulti(t *testing.T) {
 	})
 
 	// stupid interface wrapping
-	tp := make([]refs.TangledPost, len(msgs))
+	tp := make([]TangledPost, len(msgs))
 	for i, m := range msgs {
-		tp[i] = refs.TangledPost(m)
+		tp[i] = TangledPost(m)
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := refs.ByPrevious{Items: tp}
+	sorter := ByPrevious{Items: tp}
 	sorter.FillLookup()
 	sort.Sort(sorter)
 
 	h := sorter.Heads()
 	require.Len(t, h, 1)
-	require.Equal(t, "a2", string(h[0].Hash))
+	require.Equal(t, "a2", string(h[0].hash))
 }
 
 func XTestBranchCausalityLong(t *testing.T) {
@@ -280,14 +278,14 @@ func XTestBranchCausalityLong(t *testing.T) {
 	})
 
 	// stupid interface wrapping
-	tp := make([]refs.TangledPost, len(msgs))
+	tp := make([]TangledPost, len(msgs))
 	for i, m := range msgs {
-		tp[i] = refs.TangledPost(m)
+		tp[i] = TangledPost(m)
 
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := refs.ByPrevious{Items: tp}
+	sorter := ByPrevious{Items: tp}
 	sorter.FillLookup()
 	sort.Sort(sorter)
 
@@ -303,41 +301,4 @@ func XTestBranchCausalityLong(t *testing.T) {
 		}
 	}
 
-}
-
-type fakeMessage struct {
-	key string
-
-	root string // same for all
-	prev []string
-
-	order int // test index
-}
-
-func (fm fakeMessage) Key() *refs.MessageRef {
-	return &refs.MessageRef{
-		Hash: []byte(fm.key),
-		Algo: "fake",
-	}
-}
-
-func (fm fakeMessage) Tangle(_ string) (*refs.MessageRef, refs.MessageRefs) {
-	root := &refs.MessageRef{
-		Hash: []byte(fm.root),
-		Algo: "fake",
-	}
-
-	n := len(fm.prev)
-	if n == 0 {
-		return root, nil
-	}
-
-	brs := make(refs.MessageRefs, n)
-	for i, b := range fm.prev {
-		brs[i] = &refs.MessageRef{
-			Hash: []byte(b),
-			Algo: "fake",
-		}
-	}
-	return root, brs
 }

@@ -26,7 +26,7 @@ type Value struct {
 
 // Message allows accessing message aspects without known the feed type
 type Message interface {
-	Key() *MessageRef
+	Key() MessageRef
 	Previous() *MessageRef
 
 	Seq() int64
@@ -34,7 +34,7 @@ type Message interface {
 	Claimed() time.Time
 	Received() time.Time
 
-	Author() *FeedRef
+	Author() FeedRef
 	ContentBytes() []byte
 
 	ValueContent() *Value
@@ -234,6 +234,67 @@ type TanglePoint struct {
 	Previous MessageRefs `json:"previous"`
 }
 
+type AnyRef struct {
+	r Ref
+}
+
+func (ar AnyRef) ShortRef() string {
+	if ar.r == nil {
+		panic("empty ref")
+	}
+	return ar.r.ShortRef()
+}
+
+func (ar AnyRef) Ref() string {
+	if ar.r == nil {
+		panic("empty ref")
+	}
+	return ar.r.Ref()
+}
+
+func (ar AnyRef) Algo() RefAlgo {
+	return ar.r.Algo()
+}
+
+func (ar AnyRef) IsBlob() (*BlobRef, bool) {
+	br, ok := ar.r.(*BlobRef)
+	return br, ok
+}
+
+func (ar *AnyRef) MarshalJSON() ([]byte, error) {
+	if ar.r == nil {
+		return nil, ErrInvalidRef
+	}
+	refStr := ar.Ref()
+	return []byte(`"` + refStr + `"`), nil
+}
+
+func (ar *AnyRef) UnmarshalJSON(b []byte) error {
+	if len(b) < 53 {
+		return ErrInvalidRef
+	}
+
+	var refStr string
+	err := json.Unmarshal(b, &refStr)
+	if err != nil {
+		return fmt.Errorf("ssb/anyRef: not a valid JSON string (%w)", err)
+	}
+
+	newRef, err := ParseRef(refStr)
+	if err != nil {
+		return err
+	}
+
+	ar.r = newRef
+	return nil
+}
+
+var (
+	_ json.Marshaler   = (*AnyRef)(nil)
+	_ json.Unmarshaler = (*AnyRef)(nil)
+	_ Ref              = (*AnyRef)(nil)
+)
+
 type Mention struct {
 	Link AnyRef `json:"link,omitempty"`
 	Name string `json:"name,omitempty"`
@@ -273,13 +334,13 @@ type OldAddress struct {
 }
 
 type KeyValueRaw struct {
-	Key_      *MessageRef           `json:"key"`
+	Key_      MessageRef            `json:"key"`
 	Value     Value                 `json:"value"`
 	Timestamp encodedTime.Millisecs `json:"timestamp"`
 }
 
 type KeyValueAsMap struct {
-	Key       *MessageRef           `json:"key"`
+	Key       MessageRef            `json:"key"`
 	Value     Value                 `json:"value"`
 	Timestamp encodedTime.Millisecs `json:"timestamp"`
 }
@@ -290,12 +351,12 @@ func (kvr KeyValueRaw) Seq() int64 {
 	return kvr.Value.Sequence
 }
 
-func (kvr KeyValueRaw) Key() *MessageRef {
+func (kvr KeyValueRaw) Key() MessageRef {
 	return kvr.Key_
 }
 
-func (kvr KeyValueRaw) Author() *FeedRef {
-	return &kvr.Value.Author
+func (kvr KeyValueRaw) Author() FeedRef {
+	return kvr.Value.Author
 }
 
 func (kvr KeyValueRaw) Previous() *MessageRef {

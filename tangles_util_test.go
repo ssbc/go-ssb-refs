@@ -40,17 +40,17 @@ type fakeMessage struct {
 	order int // test index
 }
 
-func (fm fakeMessage) Key() *MessageRef {
-	return &MessageRef{
-		Hash: []byte(fm.key),
-		Algo: "fake",
+func (fm fakeMessage) Key() MessageRef {
+	return MessageRef{
+		hash: []byte(fm.key),
+		algo: "fake",
 	}
 }
 
-func (fm fakeMessage) Tangle(_ string) (*MessageRef, MessageRefs) {
-	root := &MessageRef{
-		Hash: []byte(fm.root),
-		Algo: "fake",
+func (fm fakeMessage) Tangle(_ string) (MessageRef, MessageRefs) {
+	root := MessageRef{
+		hash: []byte(fm.root),
+		algo: "fake",
 	}
 
 	n := len(fm.prev)
@@ -60,9 +60,9 @@ func (fm fakeMessage) Tangle(_ string) (*MessageRef, MessageRefs) {
 
 	brs := make(MessageRefs, n)
 	for i, b := range fm.prev {
-		brs[i] = &MessageRef{
-			Hash: []byte(b),
-			Algo: "fake",
+		brs[i] = MessageRef{
+			hash: []byte(b),
+			algo: "fake",
 		}
 	}
 	return root, brs

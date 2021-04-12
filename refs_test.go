@@ -27,39 +27,39 @@ func TestParseRef(t *testing.T) {
 		{"@tooShort.ed25519", newFeedRefLenError(6), nil},
 		{"&c29tZU5vbmVTZW5zZQo=.sha256", newHashLenError(14), nil},
 
-		{"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.ed25519", nil, &FeedRef{
-			ID:   []byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
-			Algo: RefAlgoFeedSSB1,
+		{"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.ed25519", nil, FeedRef{
+			id:   [32]byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
+			algo: RefAlgoFeedSSB1,
 		}},
 
 		// {"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.bamboo?", nil, &FeedRef{
-		// 	ID:   []byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
-		// 	Algo: RefAlgoFeed?????,
+		// 	id:   [32]byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
+		// 	algo: RefAlgoFeed?????,
 		// }},
 
-		{"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.ggfeed-v1", nil, &FeedRef{
-			ID:   []byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
-			Algo: RefAlgoFeedGabby,
+		{"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.ggfeed-v1", nil, FeedRef{
+			id:   [32]byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
+			algo: RefAlgoFeedGabby,
 		}},
 
-		{"&84SSLNv5YdDVTdSzN2V1gzY5ze4lj6tYFkNyT+P28Qs=.sha256", nil, &BlobRef{
-			Hash: []byte{243, 132, 146, 44, 219, 249, 97, 208, 213, 77, 212, 179, 55, 101, 117, 131, 54, 57, 205, 238, 37, 143, 171, 88, 22, 67, 114, 79, 227, 246, 241, 11},
-			Algo: RefAlgoBlobSSB1,
+		{"&84SSLNv5YdDVTdSzN2V1gzY5ze4lj6tYFkNyT+P28Qs=.sha256", nil, BlobRef{
+			hash: []byte{243, 132, 146, 44, 219, 249, 97, 208, 213, 77, 212, 179, 55, 101, 117, 131, 54, 57, 205, 238, 37, 143, 171, 88, 22, 67, 114, 79, 227, 246, 241, 11},
+			algo: RefAlgoBlobSSB1,
 		}},
 
-		{"%2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=.sha256", nil, &MessageRef{
-			Hash: []byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},
-			Algo: RefAlgoMessageSSB1,
+		{"%2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=.sha256", nil, MessageRef{
+			hash: []byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},
+			algo: RefAlgoMessageSSB1,
 		}},
 
-		{`%vof09Dhy3YUat1ylIUVGaCjotAFxE8iGbF6QxLlCWWc=.cloaked`, nil, &MessageRef{
-			Hash: []byte{190, 135, 244, 244, 56, 114, 221, 133, 26, 183, 92, 165, 33, 69, 70, 104, 40, 232, 180, 1, 113, 19, 200, 134, 108, 94, 144, 196, 185, 66, 89, 103},
-			Algo: RefAlgoCloakedGroup,
+		{`%vof09Dhy3YUat1ylIUVGaCjotAFxE8iGbF6QxLlCWWc=.cloaked`, nil, MessageRef{
+			hash: []byte{190, 135, 244, 244, 56, 114, 221, 133, 26, 183, 92, 165, 33, 69, 70, 104, 40, 232, 180, 1, 113, 19, 200, 134, 108, 94, 144, 196, 185, 66, 89, 103},
+			algo: RefAlgoCloakedGroup,
 		}},
 
-		{"%2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=.ggmsg-v1", nil, &MessageRef{
-			Hash: []byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},
-			Algo: RefAlgoMessageGabby,
+		{"%2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=.ggmsg-v1", nil, MessageRef{
+			hash: []byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},
+			algo: RefAlgoMessageGabby,
 		}},
 	}
 	for i, tc := range tcases {

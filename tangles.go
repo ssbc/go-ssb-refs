@@ -7,9 +7,9 @@ import (
 
 // TangledPost is a utility type for ByPrevious' sorting functionality.
 type TangledPost interface {
-	Key() *MessageRef
+	Key() MessageRef
 
-	Tangle(name string) (root *MessageRef, prev MessageRefs)
+	Tangle(name string) (root MessageRef, prev MessageRefs)
 }
 
 // ByPrevious offers sorting messages by their previous cipherlinks relation.
@@ -24,7 +24,7 @@ type ByPrevious struct {
 	backl pointsToMap // these messages point to another (reverse from the above)
 }
 
-func (m pointsToMap) add(k, msg *MessageRef) {
+func (m pointsToMap) add(k, msg MessageRef) {
 	refs := m[k.Ref()]
 	m[k.Ref()] = append(refs, msg.Ref())
 }

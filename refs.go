@@ -116,12 +116,12 @@ type MessageRef struct {
 
 // Ref prints the full identifieir
 func (ref MessageRef) Ref() string {
-	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash), ref.Algo)
+	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash), ref.algo)
 }
 
 // ShortRef prints a shortend version
 func (ref MessageRef) ShortRef() string {
-	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.Algo)
+	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
 }
 
 func (ref MessageRef) Algo() RefAlgo {
@@ -157,7 +157,7 @@ func (mr *MessageRef) UnmarshalText(text []byte) error {
 	if err != nil {
 		return fmt.Errorf("message(%s): unmarshal failed: %w", string(text), err)
 	}
-	*mr = *newRef
+	*mr = newRef
 	return nil
 }
 
@@ -174,26 +174,26 @@ func (r *MessageRef) Scan(raw interface{}) error {
 		if err != nil {
 			return fmt.Errorf("msgRef/Scan: failed to serialze from string: %w", err)
 		}
-		*r = *mr
+		*r = mr
 	default:
 		return fmt.Errorf("msgRef/Scan: unhandled type %T", raw)
 	}
 	return nil
 }
 
-func ParseMessageRef(s string) (*MessageRef, error) {
+func ParseMessageRef(s string) (MessageRef, error) {
 	ref, err := ParseRef(s)
 	if err != nil {
-		return nil, fmt.Errorf("messageRef: failed to parse ref (%q): %w", s, err)
+		return MessageRef{}, fmt.Errorf("messageRef: failed to parse ref (%q): %w", s, err)
 	}
-	newRef, ok := ref.(*MessageRef)
+	newRef, ok := ref.(MessageRef)
 	if !ok {
-		return nil, fmt.Errorf("messageRef: not a message! %T", ref)
+		return MessageRef{}, fmt.Errorf("messageRef: not a message! %T", ref)
 	}
 	return newRef, nil
 }
 
-type MessageRefs []*MessageRef
+type MessageRefs []MessageRef
 
 func (mr *MessageRefs) String() string {
 	var s []string
@@ -217,7 +217,7 @@ func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 	if bytes.HasPrefix(text, []byte("[")) && bytes.HasSuffix(text, []byte("]")) {
 
 		elems := bytes.Split(text[1:len(text)-1], []byte(","))
-		newArr := make([]*MessageRef, len(elems))
+		newArr := make([]MessageRef, len(elems))
 
 		for i, e := range elems {
 			var err error
@@ -232,7 +232,7 @@ func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 		*mr = newArr
 
 	} else {
-		newArr := make([]*MessageRef, 1)
+		newArr := make([]MessageRef, 1)
 
 		var err error
 		newArr[0], err = ParseMessageRef(string(text[1 : len(text)-1]))
@@ -350,11 +350,11 @@ type BlobRef struct {
 
 // Ref returns the BlobRef with the sigil &, it's base64 encoded hash and the used algo (currently only sha256)
 func (ref BlobRef) Ref() string {
-	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.hash), ref.Algo)
+	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.hash), ref.algo)
 }
 
 func (ref BlobRef) ShortRef() string {
-	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.Algo)
+	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
 }
 
 func (ref BlobRef) Algo() RefAlgo {
@@ -375,7 +375,7 @@ func ParseBlobRef(s string) (*BlobRef, error) {
 }
 
 func (ref BlobRef) Equal(b BlobRef) bool {
-	if ref.Algo != b.Algo {
+	if ref.algo != b.algo {
 		return false
 	}
 	return bytes.Equal(ref.hash, b.hash)

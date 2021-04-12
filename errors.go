@@ -20,7 +20,7 @@ var (
 
 // ErrRefLen is returned when a parsed reference was too short.
 type ErrRefLen struct {
-	algo string
+	algo RefAlgo
 	n    int
 }
 
