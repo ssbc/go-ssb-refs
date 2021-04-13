@@ -42,13 +42,13 @@ type Message interface {
 }
 
 type Contact struct {
-	Type      string   `json:"type"`
-	Contact   *FeedRef `json:"contact"`
-	Following bool     `json:"following"`
-	Blocking  bool     `json:"blocking"`
+	Type      string  `json:"type"`
+	Contact   FeedRef `json:"contact"`
+	Following bool    `json:"following"`
+	Blocking  bool    `json:"blocking"`
 }
 
-func NewContactFollow(who *FeedRef) *Contact {
+func NewContactFollow(who FeedRef) *Contact {
 	return &Contact{
 		Type:      "contact",
 		Contact:   who,
@@ -56,7 +56,7 @@ func NewContactFollow(who *FeedRef) *Contact {
 	}
 }
 
-func NewContactBlock(who *FeedRef) *Contact {
+func NewContactBlock(who FeedRef) *Contact {
 	return &Contact{
 		Type:     "contact",
 		Contact:  who,
@@ -109,13 +109,13 @@ func (c *Contact) UnmarshalJSON(b []byte) error {
 
 type About struct {
 	Type        string   `json:"type"`
-	About       *FeedRef `json:"about"`
+	About       FeedRef  `json:"about"`
 	Name        string   `json:"name,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Image       *BlobRef `json:"image,omitempty"`
 }
 
-func NewAboutName(who *FeedRef, name string) *About {
+func NewAboutName(who FeedRef, name string) *About {
 	return &About{
 		Type:  "about",
 		About: who,
@@ -123,7 +123,7 @@ func NewAboutName(who *FeedRef, name string) *About {
 	}
 }
 
-func NewAboutImage(who *FeedRef, img *BlobRef) *About {
+func NewAboutImage(who FeedRef, img *BlobRef) *About {
 	return &About{
 		Type:  "about",
 		About: who,
@@ -187,7 +187,7 @@ func (a *About) UnmarshalJSON(b []byte) error {
 		if err != nil {
 			return fmt.Errorf("about: invalid image: %q: %w", newImgBlob, err)
 		}
-		newA.Image = br
+		newA.Image = &br
 	}
 
 	*a = *newA

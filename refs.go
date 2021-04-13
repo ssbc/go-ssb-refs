@@ -109,6 +109,26 @@ type MessageRef struct {
 	algo RefAlgo
 }
 
+func NewMessageRefFromBytes(b []byte, algo RefAlgo) (MessageRef, error) {
+	fr := MessageRef{
+		algo: algo,
+	}
+	n := copy(fr.hash[:], b)
+	if n != 32 {
+		return MessageRef{}, ErrRefLen{algo: fr.algo, n: n}
+	}
+	return fr, nil
+}
+
+func (ref MessageRef) CopyHashTo(b []byte) error {
+	if len(b) != len(ref.hash) {
+		return ErrRefLen{algo: ref.algo, n: len(b)}
+	}
+
+	copy(b, ref.hash[:])
+	return nil
+}
+
 // Ref prints the full identifieir
 func (ref MessageRef) Ref() string {
 	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
@@ -247,6 +267,21 @@ type FeedRef struct {
 	algo RefAlgo
 }
 
+func NewFeedRefFromBytes(b []byte, algo RefAlgo) (FeedRef, error) {
+	fr := FeedRef{
+		algo: algo,
+	}
+	n := copy(fr.id[:], b)
+	if n != 32 {
+		return FeedRef{}, ErrRefLen{algo: fr.algo, n: n}
+	}
+	return fr, nil
+}
+
+func NewLegacyFeedRefFromBytes(b []byte) (FeedRef, error) {
+	return NewFeedRefFromBytes(b, RefAlgoFeedSSB1)
+}
+
 func (ref FeedRef) PubKey() ed25519.PublicKey {
 	return ref.id[:]
 }
@@ -271,14 +306,6 @@ func (ref FeedRef) Equal(b FeedRef) bool {
 	return bytes.Equal(ref.id[:], b.id[:])
 }
 
-func (ref FeedRef) Copy() *FeedRef {
-	newRef, err := ParseFeedRef(ref.Ref())
-	if err != nil {
-		panic(fmt.Errorf("failed to copy existing ref: %w", err))
-	}
-	return newRef
-}
-
 var (
 	_ encoding.TextMarshaler   = (*FeedRef)(nil)
 	_ encoding.TextUnmarshaler = (*FeedRef)(nil)
@@ -297,7 +324,7 @@ func (fr *FeedRef) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-	*fr = *newRef
+	*fr = newRef
 	return nil
 }
 
@@ -317,30 +344,64 @@ func (r *FeedRef) Scan(raw interface{}) error {
 		if err != nil {
 			return fmt.Errorf("feedRef/Scan: failed to serialize from string: %w", err)
 		}
-		*r = *fr
+		*r = fr
 	default:
 		return fmt.Errorf("feedRef/Scan: unhandled type %T (see TODO)", raw)
 	}
 	return nil
 }
 
+var emptyRef = FeedRef{}
+
 // ParseFeedRef uses ParseRef and checks that it returns a *FeedRef
-func ParseFeedRef(s string) (*FeedRef, error) {
-	ref, err := ParseRef(s)
+func ParseFeedRef(str string) (FeedRef, error) {
+	split := strings.Split(str[1:], ".")
+	if len(split) < 2 {
+		return emptyRef, ErrInvalidRef
+	}
+
+	raw, err := base64.StdEncoding.DecodeString(split[0])
 	if err != nil {
-		return nil, fmt.Errorf("feedRef: couldn't parse %q: %w", s, err)
+		return emptyRef, fmt.Errorf("feedRef: couldn't parse %q: %s: %w", s, err, ErrInvalidHash)
 	}
-	newRef, ok := ref.(*FeedRef)
-	if !ok {
-		return nil, fmt.Errorf("feedRef: not a feed! %T", ref)
+
+	if str[0] != '@' {
+		return emptyRef, ErrInvalidRefType
 	}
+
+	var algo RefAlgo
+	switch RefAlgo(split[1]) {
+	case RefAlgoFeedSSB1:
+		algo = RefAlgoFeedSSB1
+	case RefAlgoFeedGabby:
+		algo = RefAlgoFeedGabby
+	default:
+		return emptyRef, ErrInvalidRefAlgo
+	}
+	if n := len(raw); n != 32 {
+		return emptyRef, newFeedRefLenError(n)
+	}
+	newRef := FeedRef{algo: algo}
+	copy(newRef.id[:], raw)
 	return newRef, nil
+
 }
 
 // BlobRef defines a static binary attachment reference, identified it's hash.
 type BlobRef struct {
 	hash [32]byte
 	algo RefAlgo
+}
+
+func NewBlobRefFromBytes(b []byte, algo RefAlgo) (BlobRef, error) {
+	ref := BlobRef{
+		algo: algo,
+	}
+	n := copy(ref.hash[:], b)
+	if n != 32 {
+		return BlobRef{}, ErrRefLen{algo: ref.algo, n: n}
+	}
+	return ref, nil
 }
 
 // Ref returns the BlobRef with the sigil &, it's base64 encoded hash and the used algo (currently only sha256)
@@ -356,15 +417,17 @@ func (ref BlobRef) Algo() RefAlgo {
 	return ref.algo
 }
 
+var emptyBlobRef = BlobRef{}
+
 // ParseBlobRef uses ParseRef and checks that it returns a *BlobRef
-func ParseBlobRef(s string) (*BlobRef, error) {
+func ParseBlobRef(s string) (BlobRef, error) {
 	ref, err := ParseRef(s)
 	if err != nil {
-		return nil, fmt.Errorf("blobRef: failed to parse %q: %w", s, err)
+		return emptyBlobRef, fmt.Errorf("blobRef: failed to parse %q: %w", s, err)
 	}
-	newRef, ok := ref.(*BlobRef)
+	newRef, ok := ref.(BlobRef)
 	if !ok {
-		return nil, fmt.Errorf("blobRef: not a blob! %T", ref)
+		return emptyBlobRef, fmt.Errorf("blobRef: not a blob! %T", ref)
 	}
 	return newRef, nil
 }
@@ -401,7 +464,7 @@ func (br *BlobRef) UnmarshalText(text []byte) error {
 	if err != nil {
 		return fmt.Errorf(" BlobRef/UnmarshalText failed: %w", err)
 	}
-	*br = *newBR
+	*br = newBR
 	return nil
 }
 
