@@ -8,19 +8,20 @@ import (
 
 type Feed struct{ value }
 
-func FeedFromRef(r *refs.FeedRef) (*Feed, error) {
+func FeedFromRef(r refs.FeedRef) (*Feed, error) {
 	var f Feed
 	f.tipe = TypeFeed
 
 	// TODO: bamboo
-	if n := len(r.ID); n != 32 {
+	pubKey := r.PubKey()
+	if n := len(pubKey); n != 32 {
 		return nil, fmt.Errorf("ssb/tfk: unexpected value length %d: %w", n, ErrTooShort)
 	}
 
 	f.key = make([]byte, 32)
-	copy(f.key, r.ID)
+	copy(f.key, pubKey)
 
-	switch r.Algo {
+	switch r.Algo() {
 	case refs.RefAlgoFeedSSB1:
 		f.format = FormatFeedEd25519
 	case refs.RefAlgoFeedGabby:
@@ -77,22 +78,16 @@ func (f *Feed) UnmarshalBinary(data []byte) error {
 
 // Feed retruns the ssb-ref type after a successfull unmarshal.
 // It returns a new copy to discourage tampering with the internal values of this reference.
-func (f Feed) Feed() *refs.FeedRef {
+func (f Feed) Feed() (refs.FeedRef, error) {
 	if f.broken {
-		return nil
+		return refs.FeedRef{}, fmt.Errorf("broken feed reference")
 	}
-	var algo string
+	var algo refs.RefAlgo
 	switch f.format {
 	case FormatFeedEd25519:
 		algo = refs.RefAlgoFeedSSB1
 	case FormatFeedGabbyGrove:
 		algo = refs.RefAlgoFeedGabby
 	}
-	// copy key bytes so that tfk can be re-used?!
-	id := make([]byte, len(f.key))
-	copy(id, f.key)
-	return &refs.FeedRef{
-		Algo: algo,
-		ID:   id,
-	}
+	return refs.NewFeedRefFromBytes(f.key, algo)
 }

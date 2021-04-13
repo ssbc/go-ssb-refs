@@ -11,14 +11,14 @@ import (
 func Encode(r refs.Ref) ([]byte, error) {
 	switch tv := r.(type) {
 
-	case *refs.MessageRef:
+	case refs.MessageRef:
 		m, err := MessageFromRef(tv)
 		if err != nil {
 			return nil, err
 		}
 		return m.MarshalBinary()
 
-	case *refs.FeedRef:
+	case refs.FeedRef:
 		f, err := FeedFromRef(tv)
 		if err != nil {
 			return nil, err

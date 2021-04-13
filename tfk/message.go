@@ -8,19 +8,17 @@ import (
 
 type Message struct{ value }
 
-func MessageFromRef(r *refs.MessageRef) (*Message, error) {
+func MessageFromRef(r refs.MessageRef) (*Message, error) {
 	var m Message
 	m.tipe = TypeMessage
 
-	// TODO: bamboo
-	if n := len(r.Hash); n != 32 {
-		return nil, fmt.Errorf("ssb/tfk: unexpected value length %d: %w", n, ErrTooShort)
+	m.key = make([]byte, 32)
+	err := r.CopyHashTo(m.key)
+	if err != nil {
+		return nil, err
 	}
 
-	m.key = make([]byte, 32)
-	copy(m.key, r.Hash)
-
-	switch r.Algo {
+	switch r.Algo() {
 	case refs.RefAlgoMessageSSB1:
 		m.format = FormatMessageSHA256
 	case refs.RefAlgoMessageGabby:
@@ -74,22 +72,17 @@ func (msg *Message) UnmarshalBinary(data []byte) error {
 
 // Message retruns the ssb-ref type after a successfull unmarshal.
 // It returns a new copy to discourage tampering with the internal values of this reference.
-func (msg Message) Message() *refs.MessageRef {
+func (msg Message) Message() (refs.MessageRef, error) {
 	if msg.broken {
-		return nil
+		return refs.MessageRef{}, fmt.Errorf("tfk: broken message ref")
 	}
-	var algo string
+	var algo refs.RefAlgo
 	switch msg.format {
 	case FormatMessageSHA256:
 		algo = refs.RefAlgoMessageSSB1
 	case FormatMessageGabbyGrove:
 		algo = refs.RefAlgoMessageGabby
 	}
-	// copy key bytes so that tfk can be re-used?!
-	hash := make([]byte, len(msg.key))
-	copy(hash, msg.key)
-	return &refs.MessageRef{
-		Algo: algo,
-		Hash: hash,
-	}
+
+	return refs.NewMessageRefFromBytes(msg.key, algo)
 }
