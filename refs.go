@@ -211,7 +211,7 @@ func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 		return nil
 	}
 
-	if bytes.Equal([]byte("[]"), text) {
+	if bytes.Equal([]byte("[]"), text) || bytes.Equal([]byte("null"), text) {
 		*mr = nil
 		return nil
 	}
@@ -239,6 +239,7 @@ func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 		var err error
 		newArr[0], err = ParseMessageRef(string(text[1 : len(text)-1]))
 		if err != nil {
+			fmt.Println(string(text))
 			return fmt.Errorf("messageRefs single unmarshal failed: %w", err)
 		}
 
@@ -447,7 +448,8 @@ func (ref *ContentRef) UnmarshalBinary(data []byte) error {
 }
 
 type AnyRef struct {
-	r Ref
+	r       Ref
+	channel string
 }
 
 func (ar AnyRef) ShortRef() string {
@@ -479,6 +481,11 @@ func (ar AnyRef) IsMessage() (*MessageRef, bool) {
 	return r, ok
 }
 
+func (ar AnyRef) IsChannel() (string, bool) {
+	ok := ar.channel != ""
+	return ar.channel, ok
+}
+
 func (ar *AnyRef) MarshalJSON() ([]byte, error) {
 	if ar.r == nil {
 		return nil, ErrInvalidRef
@@ -488,8 +495,13 @@ func (ar *AnyRef) MarshalJSON() ([]byte, error) {
 }
 
 func (ar *AnyRef) UnmarshalJSON(b []byte) error {
+	if string(b[0:2]) == `"#` {
+		ar.channel = string(b[1 : len(b)-1])
+		return nil
+	}
 	if len(b) < 53 {
-		return ErrInvalidRef
+		fmt.Printf("anyRef? %q %q\n", string(b), string(b[0:2]))
+		return fmt.Errorf("ssb/anyRef: not a ref?: %w", ErrInvalidRef)
 	}
 
 	var refStr string
