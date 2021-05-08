@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,7 +44,7 @@ func TestBranchSequential(t *testing.T) {
 
 	h := sorter.Heads()
 	require.Len(t, h, 1)
-	require.EqualValues(t, string(h[0].hash[:]), "p4", "wrong head")
+	require.EqualValues(t, string(h[0].hash[:2]), "p4", "wrong head")
 }
 
 func TestBranchConcurrent(t *testing.T) {
@@ -85,15 +86,12 @@ func TestBranchConcurrent(t *testing.T) {
 	// for >2 this should be sorted by key
 	var headKeys []string
 	for _, m := range h {
-		headKeys = append(headKeys, string(m.hash[:]))
+		headKeys = append(headKeys, string(m.hash[:2]))
 	}
-	if headKeys[0] == "a1" && headKeys[1] == "b1" {
-		t.Log("version x")
-	} else if headKeys[1] == "a1" && headKeys[0] == "b1" {
-		t.Log("version y")
-	} else {
-		t.Errorf("actual heads: %v", headKeys)
-	}
+
+	sort.Strings(headKeys)
+	wantHeads := []string{"a1", "b1"}
+	assert.Equal(t, wantHeads, headKeys)
 }
 
 func TestBranchMerge(t *testing.T) {
@@ -133,7 +131,7 @@ func TestBranchMerge(t *testing.T) {
 
 	h := sorter.Heads()
 	require.Len(t, h, 1)
-	require.Equal(t, "p2", string(h[0].hash[:]))
+	require.Equal(t, "p2", string(h[0].hash[:2]))
 }
 
 func TestBranchMergeOpen(t *testing.T) {
@@ -171,8 +169,9 @@ func TestBranchMergeOpen(t *testing.T) {
 	require.Len(t, h, 2)
 	var keys []string
 	for _, hs := range h {
-		keys = append(keys, string(hs.hash[:]))
+		keys = append(keys, string(hs.hash[:2]))
 	}
+
 	sort.Strings(keys)
 	require.Equal(t, []string{"c2", "d1"}, keys)
 }
@@ -213,8 +212,9 @@ func TestBranchMergeOpenTwo(t *testing.T) {
 	require.Len(t, h, 2)
 	var keys []string
 	for _, hs := range h {
-		keys = append(keys, string(hs.hash[:]))
+		keys = append(keys, string(hs.hash[:2]))
 	}
+
 	sort.Strings(keys)
 	require.Equal(t, []string{"b2", "c2"}, keys)
 }
@@ -255,7 +255,7 @@ func TestBranchMergeMulti(t *testing.T) {
 
 	h := sorter.Heads()
 	require.Len(t, h, 1)
-	require.Equal(t, "a2", string(h[0].hash[:]))
+	require.Equal(t, "a2", string(h[0].hash[:2]))
 }
 
 func XTestBranchCausalityLong(t *testing.T) {

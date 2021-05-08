@@ -48,16 +48,16 @@ type Contact struct {
 	Blocking  bool    `json:"blocking"`
 }
 
-func NewContactFollow(who FeedRef) *Contact {
-	return &Contact{
+func NewContactFollow(who FeedRef) Contact {
+	return Contact{
 		Type:      "contact",
 		Contact:   who,
 		Following: true,
 	}
 }
 
-func NewContactBlock(who FeedRef) *Contact {
-	return &Contact{
+func NewContactBlock(who FeedRef) Contact {
+	return Contact{
 		Type:     "contact",
 		Contact:  who,
 		Blocking: true,
@@ -230,12 +230,14 @@ type Post struct {
 type Tangles map[string]TanglePoint
 
 type TanglePoint struct {
-	Root     *MessageRef `json:"root"`
+	Root     MessageRef  `json:"root"`
 	Previous MessageRefs `json:"previous"`
 }
 
 type AnyRef struct {
 	r Ref
+
+	channel string
 }
 
 func (ar AnyRef) ShortRef() string {
@@ -261,6 +263,21 @@ func (ar AnyRef) IsBlob() (BlobRef, bool) {
 	return br, ok
 }
 
+func (ar AnyRef) IsFeed() (FeedRef, bool) {
+	r, ok := ar.r.(FeedRef)
+	return r, ok
+}
+
+func (ar AnyRef) IsMessage() (MessageRef, bool) {
+	r, ok := ar.r.(MessageRef)
+	return r, ok
+}
+
+func (ar AnyRef) IsChannel() (string, bool) {
+	ok := ar.channel != ""
+	return ar.channel, ok
+}
+
 func (ar *AnyRef) MarshalJSON() ([]byte, error) {
 	if ar.r == nil {
 		return nil, ErrInvalidRef
@@ -270,6 +287,11 @@ func (ar *AnyRef) MarshalJSON() ([]byte, error) {
 }
 
 func (ar *AnyRef) UnmarshalJSON(b []byte) error {
+	if string(b[0:2]) == `"#` {
+		ar.channel = string(b[1 : len(b)-1])
+		return nil
+	}
+
 	if len(b) < 53 {
 		return ErrInvalidRef
 	}

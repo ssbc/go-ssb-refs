@@ -27,7 +27,7 @@ func FeedFromRef(r refs.FeedRef) (*Feed, error) {
 	case refs.RefAlgoFeedGabby:
 		f.format = FormatFeedGabbyGrove
 	default:
-		return nil, fmt.Errorf("format value: %x: %w", f.format, ErrUnhandledFormat)
+		return nil, fmt.Errorf("format value: %s: %w", r.Algo(), ErrUnhandledFormat)
 	}
 	return &f, nil
 }

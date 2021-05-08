@@ -9,10 +9,18 @@ import (
 	"go.mindeco.de/ssb-refs/tfk"
 )
 
+func mustMakeFeed(t *testing.T, hash []byte, algo refs.RefAlgo) refs.FeedRef {
+	mr, err := refs.NewFeedRefFromBytes(hash, algo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return mr
+}
+
 func TestFormatFeedRef(t *testing.T) {
 	type testcase struct {
 		name string
-		in   *refs.FeedRef
+		in   refs.FeedRef
 		out  []byte
 		err  error
 	}
@@ -20,37 +28,24 @@ func TestFormatFeedRef(t *testing.T) {
 	tcs := []testcase{
 		{
 			name: "ed25519",
-			in: &refs.FeedRef{
-				Algo: "ed25519",
-				ID:   seq(0, 32),
-			},
-			out: append([]byte{tfk.TypeFeed, tfk.FormatFeedEd25519}, seq(0, 32)...),
+			in:   mustMakeFeed(t, seq(0, 32), "ed25519"),
+			out:  append([]byte{tfk.TypeFeed, tfk.FormatFeedEd25519}, seq(0, 32)...),
 		},
 		{
 			name: "gabby",
-			in: &refs.FeedRef{
-				Algo: "ggfeed-v1",
-				ID:   seq(0, 32),
-			},
-			out: append([]byte{tfk.TypeFeed, tfk.FormatFeedGabbyGrove}, seq(0, 32)...),
+			in:   mustMakeFeed(t, seq(0, 32), "ggfeed-v1"),
+			out:  append([]byte{tfk.TypeFeed, tfk.FormatFeedGabbyGrove}, seq(0, 32)...),
 		},
 		{
 			name: "tooShort",
-			in: &refs.FeedRef{
-				Algo: "tooShort",
-				ID:   nil,
-			},
-			out: nil,
-			err: tfk.ErrTooShort,
+			out:  nil,
+			err:  tfk.ErrTooShort,
 		},
 		{
 			name: "unknown-algo",
-			in: &refs.FeedRef{
-				Algo: "the-future",
-				ID:   seq(0, 32),
-			},
-			out: append([]byte{tfk.TypeFeed, 42}, seq(0, 32)...),
-			err: tfk.ErrUnhandledFormat,
+			in:   mustMakeFeed(t, seq(0, 32), "the-future"),
+			out:  append([]byte{tfk.TypeFeed, 42}, seq(0, 32)...),
+			err:  tfk.ErrUnhandledFormat,
 		},
 	}
 
@@ -61,12 +56,12 @@ func TestFormatFeedRef(t *testing.T) {
 			err := f.UnmarshalBinary(tc.out)
 			if tc.err != nil {
 				require.Equal(t, tc.err.Error(), err.Error())
-				require.Nil(t, f.Feed())
 				return
 			}
 			require.NoError(t, err)
 
-			feedRef := f.Feed()
+			feedRef, err := f.Feed()
+			require.NoError(t, err)
 			require.NotNil(t, feedRef)
 			require.True(t, feedRef.Equal(tc.in))
 
@@ -81,10 +76,18 @@ func TestFormatFeedRef(t *testing.T) {
 	}
 }
 
+func mustMakeMessage(t *testing.T, hash []byte, algo refs.RefAlgo) refs.MessageRef {
+	mr, err := refs.NewMessageRefFromBytes(hash, algo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return mr
+}
+
 func TestFormatMessageRef(t *testing.T) {
 	type testcase struct {
 		name string
-		in   *refs.MessageRef
+		in   refs.MessageRef
 		out  []byte
 		err  error
 	}
@@ -92,35 +95,26 @@ func TestFormatMessageRef(t *testing.T) {
 	tcs := []testcase{
 		{
 			name: "sha256",
-			in: &refs.MessageRef{
-				Algo: "sha256",
-				Hash: seq(0, 32),
-			},
+			in:   mustMakeMessage(t, seq(0, 32), "sha256"),
+
 			out: append([]byte{tfk.TypeMessage, tfk.FormatMessageSHA256}, seq(0, 32)...),
 		},
 		{
 			name: "gabby",
-			in: &refs.MessageRef{
-				Algo: "ggmsg-v1",
-				Hash: seq(0, 32),
-			},
+			in:   mustMakeMessage(t, seq(0, 32), "ggmsg-v1"),
+
 			out: append([]byte{tfk.TypeMessage, tfk.FormatMessageGabbyGrove}, seq(0, 32)...),
 		},
 		{
 			name: "tooShort",
-			in: &refs.MessageRef{
-				Algo: "tooShort",
-				Hash: nil,
-			},
+
 			out: nil,
 			err: tfk.ErrTooShort,
 		},
 		{
 			name: "unknown-algo",
-			in: &refs.MessageRef{
-				Algo: "the-future",
-				Hash: seq(0, 32),
-			},
+			in:   mustMakeMessage(t, seq(0, 32), "the-future"),
+
 			out: append([]byte{tfk.TypeMessage, 42}, seq(0, 32)...),
 			err: tfk.ErrUnhandledFormat,
 		},
@@ -133,13 +127,13 @@ func TestFormatMessageRef(t *testing.T) {
 			err := m.UnmarshalBinary(tc.out)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
-				require.Nil(t, m.Message())
 				return
 			}
 
 			require.NoError(t, err)
 
-			msgRef := m.Message()
+			msgRef, err := m.Message()
+			require.NoError(t, err)
 			require.NotNil(t, msgRef)
 			require.True(t, msgRef.Equal(tc.in), "got %s and %s", msgRef.Ref(), tc.in.Ref())
 
