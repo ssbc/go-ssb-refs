@@ -488,6 +488,9 @@ func (ar AnyRef) IsChannel() (string, bool) {
 
 func (ar *AnyRef) MarshalJSON() ([]byte, error) {
 	if ar.r == nil {
+		if ar.channel != "" {
+			return []byte(`"` + ar.channel + `"`), nil
+		}
 		return nil, ErrInvalidRef
 	}
 	refStr := ar.Ref()
