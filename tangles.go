@@ -1,6 +1,7 @@
 package refs
 
 import (
+	"math"
 	"sort"
 )
 
@@ -52,7 +53,7 @@ func (by *ByPrevious) FillLookup() {
 	for _, m := range by.Items {
 		_, prev := m.Tangle(by.TangleName)
 
-		if prev == nil {
+		if prev == nil || len(prev) == 0 {
 			by.root = m.Key().Ref()
 			continue
 		}
@@ -107,7 +108,7 @@ func (by ByPrevious) hopsToRoot(key string, hop int) int {
 
 	pointsTo, ok := by.after[key]
 	if !ok {
-		panic("untangled message which isnt root:" + key)
+		return math.MaxInt32 // we might not have the message
 	}
 
 	var found []int // collect all paths for tie-breaking
