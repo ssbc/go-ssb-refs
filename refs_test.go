@@ -4,9 +4,8 @@ package refs
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +75,7 @@ func TestParseRef(t *testing.T) {
 			}
 			t.Log(i, r.ShortRef())
 		} else {
-			a.EqualError(errors.Cause(err), tc.err.Error(), "%d wrong error", i)
+			a.True(errors.Is(err, tc.err), "%d wrong error: %s", i, err)
 		}
 	}
 }

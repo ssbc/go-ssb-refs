@@ -4,19 +4,18 @@ package refs
 
 import (
 	"encoding/json"
-	stderr "errors"
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 // Common errors for invalid references
 var (
-	ErrInvalidRef     = stderr.New("ssb: Invalid Ref")
-	ErrInvalidRefType = stderr.New("ssb: Invalid Ref Type")
-	ErrInvalidRefAlgo = stderr.New("ssb: Invalid Ref Algo")
-	ErrInvalidSig     = stderr.New("ssb: Invalid Signature")
-	ErrInvalidHash    = stderr.New("ssb: Invalid Hash")
+	ErrInvalidRef        = errors.New("ssb: Invalid Ref")
+	ErrInvalidRefType    = errors.New("ssb: Invalid Ref Type")
+	ErrInvalidRefAlgo    = errors.New("ssb: Invalid Ref Algo")
+	ErrInvalidSig        = errors.New("ssb: Invalid Signature")
+	ErrInvalidHash       = errors.New("ssb: Invalid Hash")
+	ErrUnuspportedFormat = errors.New("ssb: unsupported format")
 )
 
 // ErrRefLen is returned when a parsed reference was too short.
@@ -40,17 +39,17 @@ func newHashLenError(n int) error {
 
 // IsMessageUnusable checks if an error is ErrWrongType, ErrMalfromedMsg or *json.SyntaxError
 func IsMessageUnusable(err error) bool {
-	cause := errors.Cause(err)
-	_, is := cause.(ErrWrongType)
-	if is {
+	var errWt ErrWrongType
+	if errors.As(err, &errWt) {
 		return true
 	}
-	_, is = cause.(ErrMalfromedMsg)
-	if is {
+
+	var errMalMsg ErrMalfromedMsg
+	if errors.As(err, &errMalMsg) {
 		return true
 	}
-	_, is = cause.(*json.SyntaxError)
-	return is
+
+	return errors.Is(err, &json.SyntaxError{})
 }
 
 // ErrMalfromedMsg is returned if a message has invalid values
@@ -75,5 +74,3 @@ type ErrWrongType struct {
 func (ewt ErrWrongType) Error() string {
 	return fmt.Sprintf("ErrWrongType: want: %s has: %s", ewt.want, ewt.has)
 }
-
-var ErrUnuspportedFormat = fmt.Errorf("ssb: unsupported format")

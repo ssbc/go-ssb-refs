@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cryptix/go/encodedTime"
-	"github.com/pkg/errors"
-	"go.cryptoscope.co/margaret"
+	"go.mindeco.de/encodedTime"
 )
 
 // Value describes a signed entry on a classical ssb feed.
@@ -17,7 +15,7 @@ import (
 type Value struct {
 	Previous  *MessageRef           `json:"previous"`
 	Author    FeedRef               `json:"author"`
-	Sequence  margaret.BaseSeq      `json:"sequence"`
+	Sequence  int64                 `json:"sequence"`
 	Timestamp encodedTime.Millisecs `json:"timestamp"`
 	Hash      string                `json:"hash"`
 	Content   json.RawMessage       `json:"content"`
@@ -31,7 +29,7 @@ type Message interface {
 	Key() *MessageRef
 	Previous() *MessageRef
 
-	margaret.Seq
+	Seq() int64
 
 	Claimed() time.Time
 	Received() time.Time
@@ -41,64 +39,6 @@ type Message interface {
 
 	ValueContent() *Value
 	ValueContentJSON() json.RawMessage
-}
-
-// DropContentRequest has special meaning on a gabby-grove feed.
-// It's signature verification allows ommiting the content.
-// A feed author can ask other peers to drop a previous message of theirs with this.
-// Sequence must be smaller then current, also the targeted message can't be a drop-content-request
-type DropContentRequest struct {
-	Type     string     `json:"type"`
-	Sequence uint       `json:"sequence"`
-	Hash     MessageRef `json:"hash"`
-}
-
-const DropContentRequestType = "drop-content-request"
-
-func NewDropContentRequest(seq uint, h MessageRef) *DropContentRequest {
-	return &DropContentRequest{
-		Type:     DropContentRequestType,
-		Sequence: seq,
-		Hash:     h,
-	}
-}
-
-func (dcr DropContentRequest) Valid(log margaret.Log) bool {
-	if dcr.Sequence < 1 {
-		return false
-	}
-
-	msgv, err := log.Get(margaret.BaseSeq(dcr.Sequence - 1))
-	if err != nil {
-		return false
-	}
-
-	msg, ok := msgv.(Message)
-	if !ok {
-		return false
-	}
-
-	if msg.Author().Algo != RefAlgoFeedGabby {
-		return false
-	}
-
-	match := msg.Key().Equal(&dcr.Hash)
-	if !match {
-		return false
-	}
-
-	// check we can't delete deletes
-	var msgType struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(msg.ContentBytes(), &msgType); err != nil {
-		return false
-	}
-	if msgType.Type == DropContentRequestType {
-		return false
-	}
-
-	return true
 }
 
 type Contact struct {
@@ -245,7 +185,7 @@ func (a *About) UnmarshalJSON(b []byte) error {
 	if newImgBlob != "" {
 		br, err := ParseBlobRef(newImgBlob)
 		if err != nil {
-			return errors.Wrapf(err, "about: invalid image: %q", newImgBlob)
+			return fmt.Errorf("about: invalid image: %q: %w", newImgBlob, err)
 		}
 		newA.Image = br
 	}
@@ -347,7 +287,7 @@ type KeyValueAsMap struct {
 var _ Message = (*KeyValueRaw)(nil)
 
 func (kvr KeyValueRaw) Seq() int64 {
-	return kvr.Value.Sequence.Seq()
+	return kvr.Value.Sequence
 }
 
 func (kvr KeyValueRaw) Key() *MessageRef {

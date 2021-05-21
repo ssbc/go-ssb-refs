@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -46,11 +45,8 @@ func ParseRef(str string) (Ref, error) {
 	}
 
 	raw, err := base64.StdEncoding.DecodeString(split[0])
-	if err != nil { // ???
-		raw, err = base64.URLEncoding.DecodeString(split[1])
-		if err != nil {
-			return nil, errors.Wrapf(ErrInvalidHash, "b64 decode failed (%s)", err)
-		}
+	if err != nil {
+		return nil, fmt.Errorf("ssb-ref: b64 decode failed (%s): %w", err, ErrInvalidHash)
 	}
 
 	switch string(str[0]) {
@@ -157,7 +153,7 @@ func (mr *MessageRef) UnmarshalText(text []byte) error {
 	}
 	newRef, err := ParseMessageRef(string(text))
 	if err != nil {
-		return errors.Wrapf(err, "message(%s): unmarshal failed", string(text))
+		return fmt.Errorf("message(%s): unmarshal failed: %w", string(text), err)
 	}
 	*mr = *newRef
 	return nil
@@ -186,7 +182,7 @@ func (r *MessageRef) Scan(raw interface{}) error {
 func ParseMessageRef(s string) (*MessageRef, error) {
 	ref, err := ParseRef(s)
 	if err != nil {
-		return nil, errors.Wrapf(err, "messageRef: failed to parse ref (%q)", s)
+		return nil, fmt.Errorf("messageRef: failed to parse ref (%q): %w", s, err)
 	}
 	newRef, ok := ref.(*MessageRef)
 	if !ok {
@@ -227,7 +223,7 @@ func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 			r = r[1 : len(r)-1] // remove quotes
 			newArr[i], err = ParseMessageRef(r)
 			if err != nil {
-				return errors.Wrapf(err, "messageRefs %d unmarshal failed", i)
+				return fmt.Errorf("messageRefs %d unmarshal failed: %w", i, err)
 			}
 		}
 
@@ -331,7 +327,7 @@ func (r *FeedRef) Scan(raw interface{}) error {
 func ParseFeedRef(s string) (*FeedRef, error) {
 	ref, err := ParseRef(s)
 	if err != nil {
-		return nil, errors.Wrapf(err, "feedRef: couldn't parse %q", s)
+		return nil, fmt.Errorf("feedRef: couldn't parse %q: %w", s, err)
 	}
 	newRef, ok := ref.(*FeedRef)
 	if !ok {
@@ -359,7 +355,7 @@ func (ref BlobRef) ShortRef() string {
 func ParseBlobRef(s string) (*BlobRef, error) {
 	ref, err := ParseRef(s)
 	if err != nil {
-		return nil, errors.Wrapf(err, "blobRef: failed to parse %q", s)
+		return nil, fmt.Errorf("blobRef: failed to parse %q: %w", s, err)
 	}
 	newRef, ok := ref.(*BlobRef)
 	if !ok {
