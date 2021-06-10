@@ -401,6 +401,10 @@ var emptyRef = FeedRef{}
 
 // ParseFeedRef uses ParseRef and checks that it returns a *FeedRef
 func ParseFeedRef(str string) (FeedRef, error) {
+	if len(str) == 0 {
+		return emptyRef, fmt.Errorf("ssb: feedRef empty")
+	}
+
 	split := strings.Split(str[1:], ".")
 	if len(split) < 2 {
 		return emptyRef, ErrInvalidRef
@@ -424,9 +428,11 @@ func ParseFeedRef(str string) (FeedRef, error) {
 	default:
 		return emptyRef, ErrInvalidRefAlgo
 	}
+
 	if n := len(raw); n != 32 {
 		return emptyRef, newFeedRefLenError(n)
 	}
+
 	newRef := FeedRef{algo: algo}
 	copy(newRef.id[:], raw)
 	return newRef, nil

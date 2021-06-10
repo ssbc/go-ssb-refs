@@ -18,6 +18,7 @@ func TestParseRef(t *testing.T) {
 		err  error
 		want Ref
 	}{
+		{"", ErrInvalidRef, nil},
 		{"xxxx", ErrInvalidRef, nil},
 		{"+xxx.foo", ErrInvalidHash, nil},
 		{"@xxx.foo", ErrInvalidHash, nil},
