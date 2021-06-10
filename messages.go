@@ -230,7 +230,7 @@ type Post struct {
 type Tangles map[string]TanglePoint
 
 type TanglePoint struct {
-	Root     MessageRef  `json:"root"`
+	Root     *MessageRef `json:"root"`
 	Previous MessageRefs `json:"previous"`
 }
 
