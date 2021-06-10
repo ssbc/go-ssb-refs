@@ -12,7 +12,19 @@ func FeedFromRef(r refs.FeedRef) (*Feed, error) {
 	var f Feed
 	f.tipe = TypeFeed
 
-	// TODO: bamboo
+	switch r.Algo() {
+	case refs.RefAlgoFeedSSB1:
+		f.format = FormatFeedEd25519
+	case refs.RefAlgoFeedGabby:
+		f.format = FormatFeedGabbyGrove
+	case refs.RefAlgoFeedBamboo:
+		f.format = FormatFeedBamboo
+	case refs.RefAlgoFeedBendyButt:
+		f.format = FormatFeedBendyButt
+	default:
+		return nil, fmt.Errorf("format value: %s: %w", r.Algo(), ErrUnhandledFormat)
+	}
+
 	pubKey := r.PubKey()
 	if n := len(pubKey); n != 32 {
 		return nil, fmt.Errorf("ssb/tfk: unexpected value length %d: %w", n, ErrTooShort)
@@ -21,14 +33,6 @@ func FeedFromRef(r refs.FeedRef) (*Feed, error) {
 	f.key = make([]byte, 32)
 	copy(f.key, pubKey)
 
-	switch r.Algo() {
-	case refs.RefAlgoFeedSSB1:
-		f.format = FormatFeedEd25519
-	case refs.RefAlgoFeedGabby:
-		f.format = FormatFeedGabbyGrove
-	default:
-		return nil, fmt.Errorf("format value: %s: %w", r.Algo(), ErrUnhandledFormat)
-	}
 	return &f, nil
 }
 
@@ -37,7 +41,7 @@ func (f *Feed) MarshalBinary() ([]byte, error) {
 	if f.tipe != TypeFeed {
 		return nil, ErrWrongType
 	}
-	if f.format > 2 {
+	if !IsValidFeedFormat(f.format) {
 		return nil, ErrUnhandledFormat
 	}
 	if n := len(f.key); n != 32 {
@@ -60,12 +64,11 @@ func (f *Feed) UnmarshalBinary(data []byte) error {
 		return ErrWrongType
 	}
 
-	if f.format > 2 {
+	if !IsValidFeedFormat(f.format) {
 		f.broken = true
 		return ErrUnhandledFormat
 	}
 
-	// TODO: add bamboo
 	if n := len(f.key); n != 32 {
 		if n < 32 {
 			f.broken = true
@@ -88,6 +91,12 @@ func (f Feed) Feed() (refs.FeedRef, error) {
 		algo = refs.RefAlgoFeedSSB1
 	case FormatFeedGabbyGrove:
 		algo = refs.RefAlgoFeedGabby
+	case FormatFeedBamboo:
+		algo = refs.RefAlgoFeedBamboo
+	case FormatFeedBendyButt:
+		algo = refs.RefAlgoFeedBendyButt
+	default:
+		return refs.FeedRef{}, fmt.Errorf("ssb/tfk/feed: invalid reference algo: %d", f.format)
 	}
 	return refs.NewFeedRefFromBytes(f.key, algo)
 }

@@ -37,6 +37,16 @@ func TestFormatFeedRef(t *testing.T) {
 			out:  append([]byte{tfk.TypeFeed, tfk.FormatFeedGabbyGrove}, seq(0, 32)...),
 		},
 		{
+			name: "bamboo",
+			in:   mustMakeFeed(t, seq(0, 32), "bamboo"),
+			out:  append([]byte{tfk.TypeFeed, tfk.FormatFeedBamboo}, seq(0, 32)...),
+		},
+		{
+			name: "metafeed",
+			in:   mustMakeFeed(t, seq(0, 32), "bbfeed-v1"),
+			out:  append([]byte{tfk.TypeFeed, tfk.FormatFeedBendyButt}, seq(0, 32)...),
+		},
+		{
 			name: "tooShort",
 			out:  nil,
 			err:  tfk.ErrTooShort,
@@ -104,6 +114,16 @@ func TestFormatMessageRef(t *testing.T) {
 			in:   mustMakeMessage(t, seq(0, 32), "ggmsg-v1"),
 
 			out: append([]byte{tfk.TypeMessage, tfk.FormatMessageGabbyGrove}, seq(0, 32)...),
+		},
+		{
+			name: "bamboo",
+			in:   mustMakeMessage(t, seq(0, 64), "bamboo"),
+			out:  append([]byte{tfk.TypeMessage, tfk.FormatMessageBamboo}, seq(0, 64)...),
+		},
+		{
+			name: "metafeed",
+			in:   mustMakeMessage(t, seq(0, 32), "bbmsg-v1"),
+			out:  append([]byte{tfk.TypeMessage, tfk.FormatMessageMetaFeed}, seq(0, 32)...),
 		},
 		{
 			name: "tooShort",

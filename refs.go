@@ -29,6 +29,12 @@ const (
 	RefAlgoMessageSSB1 RefAlgo = "sha256"  // scuttlebutt happend anyway
 	RefAlgoBlobSSB1    RefAlgo = RefAlgoMessageSSB1
 
+	RefAlgoFeedBamboo    RefAlgo = "bamboo"
+	RefAlgoMessageBamboo RefAlgo = "bamboo"
+
+	RefAlgoFeedBendyButt    RefAlgo = "bbfeed-v1"
+	RefAlgoMessageBendyButt RefAlgo = "bbmsg-v1"
+
 	RefAlgoCloakedGroup RefAlgo = "cloaked"
 
 	RefAlgoFeedGabby    RefAlgo = "ggfeed-v1" // cbor based chain

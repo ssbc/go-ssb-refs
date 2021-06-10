@@ -21,10 +21,14 @@ func MessageFromRef(r refs.MessageRef) (*Message, error) {
 	switch r.Algo() {
 	case refs.RefAlgoMessageSSB1:
 		m.format = FormatMessageSHA256
+	case refs.RefAlgoCloakedGroup:
+		m.format = FormatMessageCloaked
 	case refs.RefAlgoMessageGabby:
 		m.format = FormatMessageGabbyGrove
+	case refs.RefAlgoMessageBendyButt:
+		m.format = FormatMessageMetaFeed
 	default:
-		return nil, fmt.Errorf("format value: %x: %w", m.format, ErrUnhandledFormat)
+		return nil, fmt.Errorf("format value: %q: %w", r.Algo(), ErrUnhandledFormat)
 	}
 	return &m, nil
 }
@@ -34,7 +38,7 @@ func (msg *Message) MarshalBinary() ([]byte, error) {
 	if msg.tipe != TypeMessage {
 		return nil, ErrWrongType
 	}
-	if msg.format > 2 {
+	if !IsValidMessageFormat(msg.format) {
 		return nil, ErrUnhandledFormat
 	}
 	return msg.value.MarshalBinary()
@@ -54,18 +58,23 @@ func (msg *Message) UnmarshalBinary(data []byte) error {
 		return ErrWrongType
 	}
 
-	if msg.format > 2 {
+	if !IsValidMessageFormat(msg.format) {
 		msg.broken = true
 		return ErrUnhandledFormat
 	}
 
-	// TODO: add bamboo
-	if n := len(msg.key); n != 32 {
-		if n < 32 {
+	var wantedKeyLen int = 32
+	switch msg.format {
+	case FormatMessageBamboo:
+		wantedKeyLen = 64
+	}
+
+	if n := len(msg.key); n != wantedKeyLen {
+		if n < wantedKeyLen {
 			msg.broken = true
 			return fmt.Errorf("ssb/tfk/message: unexpected key length: %d: %w", n, ErrTooShort)
 		}
-		msg.key = msg.key[:32]
+		msg.key = msg.key[:wantedKeyLen]
 	}
 	return nil
 }
@@ -80,8 +89,17 @@ func (msg Message) Message() (refs.MessageRef, error) {
 	switch msg.format {
 	case FormatMessageSHA256:
 		algo = refs.RefAlgoMessageSSB1
+	case FormatMessageCloaked:
+		algo = refs.RefAlgoCloakedGroup
 	case FormatMessageGabbyGrove:
 		algo = refs.RefAlgoMessageGabby
+	case FormatMessageMetaFeed:
+		algo = refs.RefAlgoMessageBendyButt
+	case FormatMessageBamboo:
+		algo = refs.RefAlgoMessageBamboo
+	default:
+		return refs.MessageRef{}, fmt.Errorf("format value: %x: %w", msg.format, ErrUnhandledFormat)
+
 	}
 
 	return refs.NewMessageRefFromBytes(msg.key, algo)
