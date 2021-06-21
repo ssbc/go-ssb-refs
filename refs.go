@@ -46,64 +46,16 @@ func ParseRef(str string) (Ref, error) {
 		return nil, ErrInvalidRef
 	}
 
-	split := strings.Split(str[1:], ".")
-	if len(split) < 2 {
-		return nil, ErrInvalidRef
-	}
-
-	raw, err := base64.StdEncoding.DecodeString(split[0])
-	if err != nil {
-		return nil, fmt.Errorf("ssb-ref: b64 decode failed (%s): %w", err, ErrInvalidHash)
-	}
-
 	switch string(str[0]) {
 	case "@":
-		var algo RefAlgo
-		switch RefAlgo(split[1]) {
-		case RefAlgoFeedSSB1:
-			algo = RefAlgoFeedSSB1
-		case RefAlgoFeedGabby:
-			algo = RefAlgoFeedGabby
-		default:
-			return nil, ErrInvalidRefAlgo
-		}
-		if n := len(raw); n != 32 {
-			return nil, newFeedRefLenError(n)
-		}
-		newRef := FeedRef{algo: algo}
-		copy(newRef.id[:], raw)
-		return newRef, nil
+		return ParseFeedRef(str)
 	case "%":
-		var algo RefAlgo
-		switch RefAlgo(split[1]) {
-		case RefAlgoMessageSSB1:
-			algo = RefAlgoMessageSSB1
-		case RefAlgoMessageGabby:
-			algo = RefAlgoMessageGabby
-		case RefAlgoCloakedGroup:
-			algo = RefAlgoCloakedGroup
-		default:
-			return nil, ErrInvalidRefAlgo
-		}
-		if n := len(raw); n != 32 {
-			return nil, newHashLenError(n)
-		}
-		newMsg := MessageRef{algo: algo}
-		copy(newMsg.hash[:], raw)
-		return newMsg, nil
+		return ParseMessageRef(str)
 	case "&":
-		if RefAlgo(split[1]) != RefAlgoBlobSSB1 {
-			return nil, ErrInvalidRefAlgo
-		}
-		if n := len(raw); n != 32 {
-			return nil, newHashLenError(n)
-		}
-		newBlob := BlobRef{algo: RefAlgoBlobSSB1}
-		copy(newBlob.hash[:], raw)
-		return newBlob, nil
+		return ParseBlobRef(str)
+	default:
+		return nil, ErrInvalidRefType
 	}
-
-	return nil, ErrInvalidRefType
 }
 
 // MessageRef defines the content addressed version of a ssb message, identified it's hash.
@@ -223,16 +175,42 @@ func (r *MessageRef) Scan(raw interface{}) error {
 	return nil
 }
 
-func ParseMessageRef(s string) (MessageRef, error) {
-	ref, err := ParseRef(s)
+func ParseMessageRef(str string) (MessageRef, error) {
+	if len(str) == 0 {
+		return emptyMsgRef, fmt.Errorf("ssb: msgRef empty")
+	}
+
+	split := strings.Split(str[1:], ".")
+	if len(split) < 2 {
+		return emptyMsgRef, ErrInvalidRef
+	}
+
+	raw, err := base64.StdEncoding.DecodeString(split[0])
 	if err != nil {
-		return MessageRef{}, fmt.Errorf("messageRef: failed to parse ref (%q): %w", s, err)
+		return emptyMsgRef, fmt.Errorf("msgRef: couldn't parse %q: %s: %w", str, err, ErrInvalidHash)
 	}
-	newRef, ok := ref.(MessageRef)
-	if !ok {
-		return MessageRef{}, fmt.Errorf("messageRef: not a message! %T", ref)
+
+	if str[0] != '%' {
+		return emptyMsgRef, ErrInvalidRefType
 	}
-	return newRef, nil
+
+	var algo RefAlgo
+	switch RefAlgo(split[1]) {
+	case RefAlgoMessageSSB1:
+		algo = RefAlgoMessageSSB1
+	case RefAlgoMessageGabby:
+		algo = RefAlgoMessageGabby
+	case RefAlgoCloakedGroup:
+		algo = RefAlgoCloakedGroup
+	default:
+		return emptyMsgRef, ErrInvalidRefAlgo
+	}
+	if n := len(raw); n != 32 {
+		return emptyMsgRef, newHashLenError(n)
+	}
+	newMsg := MessageRef{algo: algo}
+	copy(newMsg.hash[:], raw)
+	return newMsg, nil
 }
 
 type MessageRefs []MessageRef
@@ -403,26 +381,29 @@ func (r *FeedRef) Scan(raw interface{}) error {
 	return nil
 }
 
-var emptyRef = FeedRef{}
+var (
+	emptyFeedRef = FeedRef{}
+	emptyMsgRef  = MessageRef{}
+)
 
 // ParseFeedRef uses ParseRef and checks that it returns a *FeedRef
 func ParseFeedRef(str string) (FeedRef, error) {
 	if len(str) == 0 {
-		return emptyRef, fmt.Errorf("ssb: feedRef empty")
+		return emptyFeedRef, fmt.Errorf("ssb: feedRef empty")
 	}
 
 	split := strings.Split(str[1:], ".")
 	if len(split) < 2 {
-		return emptyRef, ErrInvalidRef
+		return emptyFeedRef, ErrInvalidRef
 	}
 
 	raw, err := base64.StdEncoding.DecodeString(split[0])
 	if err != nil {
-		return emptyRef, fmt.Errorf("feedRef: couldn't parse %q: %s: %w", str, err, ErrInvalidHash)
+		return emptyFeedRef, fmt.Errorf("feedRef: couldn't parse %q: %s: %w", str, err, ErrInvalidHash)
 	}
 
 	if str[0] != '@' {
-		return emptyRef, ErrInvalidRefType
+		return emptyFeedRef, ErrInvalidRefType
 	}
 
 	var algo RefAlgo
@@ -431,12 +412,14 @@ func ParseFeedRef(str string) (FeedRef, error) {
 		algo = RefAlgoFeedSSB1
 	case RefAlgoFeedGabby:
 		algo = RefAlgoFeedGabby
+	case RefAlgoFeedBendyButt:
+		algo = RefAlgoFeedBendyButt
 	default:
-		return emptyRef, ErrInvalidRefAlgo
+		return emptyFeedRef, fmt.Errorf("unhandled feed algorithm: %s: %w", str, ErrInvalidRefAlgo)
 	}
 
 	if n := len(raw); n != 32 {
-		return emptyRef, newFeedRefLenError(n)
+		return emptyFeedRef, newFeedRefLenError(n)
 	}
 
 	newRef := FeedRef{algo: algo}
