@@ -19,8 +19,8 @@ func TestParseRef(t *testing.T) {
 		want Ref
 	}{
 		{"", ErrInvalidRef, nil},
-		{"xxxx", ErrInvalidRef, nil},
-		{"+xxx.foo", ErrInvalidHash, nil},
+		{"xxxx", ErrInvalidRefType, nil},
+		{"+xxx.foo", ErrInvalidRefType, nil},
 		{"@xxx.foo", ErrInvalidHash, nil},
 
 		{"%wayTooShort.sha256", ErrInvalidHash, nil},
@@ -66,17 +66,20 @@ func TestParseRef(t *testing.T) {
 	for i, tc := range tcases {
 		r, err := ParseRef(tc.ref)
 		if tc.err == nil {
-			if !a.NoError(err, "got error on test %d (%v)", i, tc.ref) {
+			if !a.NoError(err, "got error on test %d (%v)", i+1, tc.ref) {
 				continue
 			}
-			input := a.Equal(tc.ref, tc.want.Ref(), "test %d input<>output failed", i)
-			want := a.Equal(tc.want.Ref(), r.Ref(), "test %d re-encode failed", i)
+			input := a.Equal(tc.ref, tc.want.Ref(), "test %d input<>output failed", i+1)
+			want := a.Equal(tc.want.Ref(), r.Ref(), "test %d re-encode failed", i+1)
 			if !input || !want {
 				t.Logf("%+v", r)
 			}
-			t.Log(i, r.ShortRef())
+			t.Log(i+1, r.ShortRef())
 		} else {
-			a.True(errors.Is(err, tc.err), "%d wrong error: %s", i, err)
+			a.True(errors.Is(err, tc.err), "%d wrong error: %s", i+1, err)
+		}
+	}
+}
 		}
 	}
 }

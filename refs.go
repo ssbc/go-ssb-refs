@@ -469,16 +469,39 @@ func (ref BlobRef) CopyHashTo(b []byte) error {
 var emptyBlobRef = BlobRef{}
 
 // ParseBlobRef uses ParseRef and checks that it returns a *BlobRef
-func ParseBlobRef(s string) (BlobRef, error) {
-	ref, err := ParseRef(s)
+func ParseBlobRef(str string) (BlobRef, error) {
+	if len(str) == 0 {
+		return emptyBlobRef, fmt.Errorf("ssb: blob reference empty")
+	}
+
+	split := strings.Split(str[1:], ".")
+	if len(split) < 2 {
+		return emptyBlobRef, ErrInvalidRef
+	}
+
+	raw, err := base64.StdEncoding.DecodeString(split[0])
 	if err != nil {
-		return emptyBlobRef, fmt.Errorf("blobRef: failed to parse %q: %w", s, err)
+		return emptyBlobRef, fmt.Errorf("blob reference: couldn't parse %q: %s: %w", str, err, ErrInvalidHash)
 	}
-	newRef, ok := ref.(BlobRef)
-	if !ok {
-		return emptyBlobRef, fmt.Errorf("blobRef: not a blob! %T", ref)
+
+	if str[0] != '&' {
+		return emptyBlobRef, ErrInvalidRefType
 	}
-	return newRef, nil
+
+	var algo RefAlgo
+	switch RefAlgo(split[1]) {
+	case RefAlgoBlobSSB1:
+		algo = RefAlgoBlobSSB1
+	default:
+		return emptyBlobRef, ErrInvalidRefAlgo
+	}
+	if n := len(raw); n != 32 {
+		return emptyBlobRef, newHashLenError(n)
+	}
+
+	newBlob := BlobRef{algo: algo}
+	copy(newBlob.hash[:], raw)
+	return newBlob, nil
 }
 
 func (ref BlobRef) Equal(b BlobRef) bool {
