@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -539,3 +540,86 @@ func (br *BlobRef) UnmarshalText(text []byte) error {
 	*br = newBR
 	return nil
 }
+
+type AnyRef struct {
+	r Ref
+
+	channel string
+}
+
+func (ar AnyRef) ShortRef() string {
+	if ar.r == nil {
+		panic("empty ref")
+	}
+	return ar.r.ShortRef()
+}
+
+func (ar AnyRef) Ref() string {
+	if ar.r == nil {
+		panic("empty ref")
+	}
+	return ar.r.Ref()
+}
+
+func (ar AnyRef) Algo() RefAlgo {
+	return ar.r.Algo()
+}
+
+func (ar AnyRef) IsBlob() (BlobRef, bool) {
+	br, ok := ar.r.(BlobRef)
+	return br, ok
+}
+
+func (ar AnyRef) IsFeed() (FeedRef, bool) {
+	r, ok := ar.r.(FeedRef)
+	return r, ok
+}
+
+func (ar AnyRef) IsMessage() (MessageRef, bool) {
+	r, ok := ar.r.(MessageRef)
+	return r, ok
+}
+
+func (ar AnyRef) IsChannel() (string, bool) {
+	ok := ar.channel != ""
+	return ar.channel, ok
+}
+
+func (ar *AnyRef) MarshalJSON() ([]byte, error) {
+	if ar.r == nil {
+		return nil, ErrInvalidRef
+	}
+	refStr := ar.Ref()
+	return []byte(`"` + refStr + `"`), nil
+}
+
+func (ar *AnyRef) UnmarshalJSON(b []byte) error {
+	if string(b[0:2]) == `"#` {
+		ar.channel = string(b[1 : len(b)-1])
+		return nil
+	}
+
+	if n := len(b); n < 53 {
+		return fmt.Errorf("ssb/anyRef: too short: %d: %w", n, ErrInvalidRef)
+	}
+
+	var refStr string
+	err := json.Unmarshal(b, &refStr)
+	if err != nil {
+		return fmt.Errorf("ssb/anyRef: not a valid JSON string (%w)", err)
+	}
+
+	newRef, err := ParseRef(refStr)
+	if err != nil {
+		return fmt.Errorf("ssb/anyRef: parsing (%q) failed: %w", refStr, err)
+	}
+
+	ar.r = newRef
+	return nil
+}
+
+var (
+	_ json.Marshaler   = (*AnyRef)(nil)
+	_ json.Unmarshaler = (*AnyRef)(nil)
+	_ Ref              = (*AnyRef)(nil)
+)
