@@ -473,7 +473,7 @@ func (ref BlobRef) CopyHashTo(b []byte) error {
 	if n := len(b); n != len(ref.hash) {
 		return ErrRefLen{algo: "target", n: n}
 	}
-	copy(b, ref.algo[:])
+	copy(b, ref.hash[:])
 	return nil
 }
 
