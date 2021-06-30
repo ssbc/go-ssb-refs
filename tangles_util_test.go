@@ -48,7 +48,7 @@ func (fm fakeMessage) Key() MessageRef {
 	return r
 }
 
-func (fm fakeMessage) Tangle(_ string) (MessageRef, MessageRefs) {
+func (fm fakeMessage) Tangle(_ string) (*MessageRef, MessageRefs) {
 	root := MessageRef{
 		algo: "fake",
 	}
@@ -56,7 +56,7 @@ func (fm fakeMessage) Tangle(_ string) (MessageRef, MessageRefs) {
 
 	n := len(fm.prev)
 	if n == 0 {
-		return root, nil
+		return &root, nil
 	}
 
 	brs := make(MessageRefs, n)
@@ -64,5 +64,5 @@ func (fm fakeMessage) Tangle(_ string) (MessageRef, MessageRefs) {
 		brs[i] = MessageRef{algo: "fake"}
 		copy(brs[i].hash[:], []byte(b))
 	}
-	return root, brs
+	return &root, brs
 }

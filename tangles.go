@@ -3,13 +3,14 @@ package refs
 import (
 	"math"
 	"sort"
+	"sync"
 )
 
 // TangledPost is a utility type for ByPrevious' sorting functionality.
 type TangledPost interface {
 	Key() MessageRef
 
-	Tangle(name string) (root MessageRef, prev MessageRefs)
+	Tangle(name string) (root *MessageRef, prev MessageRefs)
 }
 
 // ByPrevious offers sorting messages by their previous cipherlinks relation.
@@ -18,6 +19,8 @@ type ByPrevious struct {
 	TangleName string
 
 	Items []TangledPost
+
+	doFill sync.Once
 
 	root  string
 	after pointsToMap // message points to another (by previous field)
@@ -32,8 +35,9 @@ func (m pointsToMap) add(k, msg MessageRef) {
 // Heads on a sorted slice of messages returns a slice of message refs which are not referenced by any other.
 // Need to call FillLookup() before using this.
 func (by *ByPrevious) Heads() MessageRefs {
-	var r MessageRefs
+	by.doFill.Do(by.fillLookup)
 
+	var r MessageRefs
 	for _, i := range by.Items {
 		if _, has := by.backl[i.Key().Ref()]; !has {
 			r = append(r, i.Key())
@@ -45,15 +49,17 @@ func (by *ByPrevious) Heads() MessageRefs {
 
 type pointsToMap map[string][]string
 
-// FillLookup needs to be called before sort.Sort()ing the slice of messages.
-func (by *ByPrevious) FillLookup() {
+func (by *ByPrevious) fillLookup() {
 	after := make(pointsToMap, len(by.Items))
 	backl := make(pointsToMap, len(by.Items))
 
 	for _, m := range by.Items {
-		_, prev := m.Tangle(by.TangleName)
+		root, prev := m.Tangle(by.TangleName)
 
-		if prev == nil || len(prev) == 0 {
+		if root == nil || len(prev) == 0 {
+			if by.root != "" {
+				panic("root already set")
+			}
 			by.root = m.Key().Ref()
 			continue
 		}
@@ -73,7 +79,10 @@ func (by *ByPrevious) FillLookup() {
 }
 
 // Len returns the number of messages, for sort.Sort.
-func (by ByPrevious) Len() int { return len(by.Items) }
+func (by *ByPrevious) Len() int {
+	by.doFill.Do(by.fillLookup)
+	return len(by.Items)
+}
 
 func (by ByPrevious) currentIndex(key string) int {
 	for idxBr, findBr := range by.Items {
@@ -133,7 +142,7 @@ func (by ByPrevious) hopsToRoot(key string, hop int) int {
 
 // Less decides if message i is before j by looking up how many hops it takes from them to the root.
 // TODO: tiebraker
-func (by ByPrevious) Less(i int, j int) bool {
+func (by *ByPrevious) Less(i int, j int) bool {
 	msgI, msgJ := by.Items[i], by.Items[j]
 	keyI, keyJ := msgI.Key().Ref(), msgJ.Key().Ref()
 
@@ -150,6 +159,6 @@ func (by ByPrevious) Less(i int, j int) bool {
 }
 
 // Swap switches the two items (for sort.Sort)
-func (by ByPrevious) Swap(i int, j int) {
+func (by *ByPrevious) Swap(i int, j int) {
 	by.Items[i], by.Items[j] = by.Items[j], by.Items[i]
 }
