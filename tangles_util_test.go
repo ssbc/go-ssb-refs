@@ -22,7 +22,7 @@ func TestBranchHelperHops(t *testing.T) {
 	}
 
 	sorter := ByPrevious{Items: tp}
-	sorter.FillLookup()
+	sorter.fillLookup()
 
 	for i := len(msgs) - 1; i >= 0; i-- {
 		if h := sorter.hopsToRoot(msgs[i].Key().Ref(), 0); h != i {

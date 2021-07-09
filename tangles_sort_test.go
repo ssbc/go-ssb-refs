@@ -28,8 +28,7 @@ func TestBranchSequential(t *testing.T) {
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := ByPrevious{Items: tp}
-	sorter.FillLookup()
+	sorter := &ByPrevious{Items: tp}
 	sort.Sort(sorter)
 
 	for i, m := range tp {
@@ -65,8 +64,7 @@ func TestBranchConcurrent(t *testing.T) {
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := ByPrevious{Items: tp}
-	sorter.FillLookup()
+	sorter := &ByPrevious{Items: tp}
 	sort.Sort(sorter)
 
 	for i, m := range tp {
@@ -113,8 +111,7 @@ func TestBranchMerge(t *testing.T) {
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := ByPrevious{Items: tp}
-	sorter.FillLookup()
+	sorter := &ByPrevious{Items: tp}
 	sort.Sort(sorter)
 
 	for i, m := range tp {
@@ -161,8 +158,7 @@ func TestBranchMergeOpen(t *testing.T) {
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := ByPrevious{Items: tp}
-	sorter.FillLookup()
+	sorter := &ByPrevious{Items: tp}
 	sort.Sort(sorter)
 
 	h := sorter.Heads()
@@ -204,8 +200,7 @@ func TestBranchMergeOpenTwo(t *testing.T) {
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := ByPrevious{Items: tp}
-	sorter.FillLookup()
+	sorter := &ByPrevious{Items: tp}
 	sort.Sort(sorter)
 
 	h := sorter.Heads()
@@ -249,8 +244,7 @@ func TestBranchMergeMulti(t *testing.T) {
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := ByPrevious{Items: tp}
-	sorter.FillLookup()
+	sorter := &ByPrevious{Items: tp}
 	sort.Sort(sorter)
 
 	h := sorter.Heads()
@@ -285,8 +279,7 @@ func XTestBranchCausalityLong(t *testing.T) {
 		// t.Log(i, m.key, m.Key().Ref())
 	}
 
-	sorter := ByPrevious{Items: tp}
-	sorter.FillLookup()
+	sorter := &ByPrevious{Items: tp}
 	sort.Sort(sorter)
 
 	for i, m := range tp {
