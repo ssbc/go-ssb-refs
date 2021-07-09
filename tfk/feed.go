@@ -70,12 +70,10 @@ func (f *Feed) UnmarshalBinary(data []byte) error {
 	}
 
 	if n := len(f.key); n != 32 {
-		if n < 32 {
-			f.broken = true
-			return fmt.Errorf("ssb/tfk/feed: unexpected key length: %d: %w", n, ErrTooShort)
-		}
-		f.key = f.key[:32]
+		f.broken = true
+		return fmt.Errorf("ssb/tfk/feed: unexpected key length: %d: %w", n, ErrTooShort)
 	}
+
 	return nil
 }
 

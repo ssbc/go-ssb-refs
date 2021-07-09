@@ -70,11 +70,8 @@ func (msg *Message) UnmarshalBinary(data []byte) error {
 	}
 
 	if n := len(msg.key); n != wantedKeyLen {
-		if n < wantedKeyLen {
-			msg.broken = true
-			return fmt.Errorf("ssb/tfk/message: unexpected key length: %d: %w", n, ErrTooShort)
-		}
-		msg.key = msg.key[:wantedKeyLen]
+		msg.broken = true
+		return fmt.Errorf("ssb/tfk/message: unexpected key length: %d: %w", n, ErrTooShort)
 	}
 	return nil
 }
