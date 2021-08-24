@@ -59,7 +59,7 @@ func ParseURI(input string) (URI, error) {
 func parseCaononicalURI(input string) (CanonicalURI, error) {
 	var c CanonicalURI
 
-	parts := strings.Split(input, ":")
+	parts := strings.Split(input, "/")
 	if len(parts) < 3 {
 		return c, ErrNotACanonicalURI
 	}
@@ -75,7 +75,11 @@ func parseCaononicalURI(input string) (CanonicalURI, error) {
 		r.algo = RefAlgo(parts[1])
 
 		if !(r.algo == RefAlgoMessageSSB1 || r.algo == RefAlgoMessageGabby) {
-			return c, ErrInvalidRefAlgo
+			if r.algo == "bendybutt-v1" {
+				r.algo = RefAlgoMessageBendyButt
+			} else {
+				return c, ErrInvalidRefAlgo
+			}
 		}
 
 		copy(r.hash[:], data)
@@ -87,7 +91,11 @@ func parseCaononicalURI(input string) (CanonicalURI, error) {
 		r.algo = RefAlgo(parts[1])
 
 		if !(r.algo == RefAlgoFeedSSB1 || r.algo == RefAlgoFeedGabby) {
-			return c, ErrInvalidRefAlgo
+			if r.algo == "bendybutt-v1" {
+				r.algo = RefAlgoFeedBendyButt
+			} else {
+				return c, ErrInvalidRefAlgo
+			}
 		}
 
 		copy(r.id[:], data)

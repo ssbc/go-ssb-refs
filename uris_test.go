@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,8 +27,8 @@ func TestParseSimpleURIs(t *testing.T) {
 
 	var cases = []tcase{
 		{
-			name:  "canon message",
-			input: "ssb:message:sha256:g3hPVPDEO1Aj_uPl0-J2NlhFB2bbFLIHlty-YuqFZ3w=",
+			name:  "canon message (ssb v1)",
+			input: "ssb:message/sha256/g3hPVPDEO1Aj_uPl0-J2NlhFB2bbFLIHlty-YuqFZ3w=",
 			want: CanonicalURI{ref: MessageRef{
 				hash: [32]byte{131, 120, 79, 84, 240, 196, 59, 80, 35, 254, 227, 229, 211, 226, 118, 54, 88, 69, 7, 102, 219, 20, 178, 7, 150, 220, 190, 98, 234, 133, 103, 124},
 				algo: RefAlgoMessageSSB1,
@@ -39,8 +38,19 @@ func TestParseSimpleURIs(t *testing.T) {
 		},
 
 		{
-			name:  "canon feed",
-			input: "ssb:feed:ed25519:-oaWWDs8g73EZFUMfW37R_ULtFEjwKN_DczvdYihjbU=",
+			name:  "canon message (bendy)",
+			input: "ssb:message/bendybutt-v1/PR2-btDEO1AjXuPl0TJ2N_hFB2bbFLIHlty0VF1ncty=",
+			want: CanonicalURI{ref: MessageRef{
+				hash: [32]byte{131, 120, 79, 84, 240, 196, 59, 80, 35, 254, 227, 229, 211, 226, 118, 54, 88, 69, 7, 102, 219, 20, 178, 7, 150, 220, 190, 98, 234, 133, 103, 124},
+				algo: RefAlgoMessageSSB1,
+			}},
+			sigil: `%PR2+btDEO1AjXuPl0TJ2N/hFB2bbFLIHlty0VF1nctw=.bbmsg-v1`,
+			kind:  KindMessage,
+		},
+
+		{
+			name:  "canon feed (classic)",
+			input: "ssb:feed/ed25519/-oaWWDs8g73EZFUMfW37R_ULtFEjwKN_DczvdYihjbU=",
 			want: CanonicalURI{ref: FeedRef{
 				id:   [32]byte{0xfa, 0x86, 0x96, 0x58, 0x3b, 0x3c, 0x83, 0xbd, 0xc4, 0x64, 0x55, 0xc, 0x7d, 0x6d, 0xfb, 0x47, 0xf5, 0xb, 0xb4, 0x51, 0x23, 0xc0, 0xa3, 0x7f, 0xd, 0xcc, 0xef, 0x75, 0x88, 0xa1, 0x8d, 0xb5},
 				algo: RefAlgoFeedSSB1,
@@ -50,8 +60,19 @@ func TestParseSimpleURIs(t *testing.T) {
 		},
 
 		{
+			name:  "canon feed (bendy butt)",
+			input: "ssb:feed/bendybutt-v1/APaWWDs8g73EZFUMfW37RBULtFEjwKNbDczvdYiRXtA=",
+			want: CanonicalURI{ref: FeedRef{
+				id:   [32]byte{0xfa, 0x86, 0x96, 0x58, 0x3b, 0x3c, 0x83, 0xbd, 0xc4, 0x64, 0x55, 0xc, 0x7d, 0x6d, 0xfb, 0x47, 0xf5, 0xb, 0xb4, 0x51, 0x23, 0xc0, 0xa3, 0x7f, 0xd, 0xcc, 0xef, 0x75, 0x88, 0xa1, 0x8d, 0xb5},
+				algo: RefAlgoFeedBendyButt,
+			}},
+			sigil: `@APaWWDs8g73EZFUMfW37RBULtFEjwKNbDczvdYiRXtA=.bbfeed-v1`,
+			kind:  KindFeed,
+		},
+
+		{
 			name:  "canon blob",
-			input: "ssb:blob:sha256:sbBmsB7XWvmIzkBzreYcuzPpLtpeCMDIs6n_OJGSC1U=",
+			input: "ssb:blob/sha256/sbBmsB7XWvmIzkBzreYcuzPpLtpeCMDIs6n_OJGSC1U=",
 			want: CanonicalURI{ref: BlobRef{
 				hash: [32]byte{0xb1, 0xb0, 0x66, 0xb0, 0x1e, 0xd7, 0x5a, 0xf9, 0x88, 0xce, 0x40, 0x73, 0xad, 0xe6, 0x1c, 0xbb, 0x33, 0xe9, 0x2e, 0xda, 0x5e, 0x8, 0xc0, 0xc8, 0xb3, 0xa9, 0xff, 0x38, 0x91, 0x92, 0xb, 0x55},
 				algo: RefAlgoBlobSSB1,
@@ -59,23 +80,6 @@ func TestParseSimpleURIs(t *testing.T) {
 			sigil: `&sbBmsB7XWvmIzkBzreYcuzPpLtpeCMDIs6n/OJGSC1U=.sha256`,
 			kind:  KindBlob,
 		},
-
-		{
-			name:  "experimental msg ref",
-			input: "ssb:?ref=ssb:message:sha256:g3hPVPDEO1Aj_uPl0-J2NlhFB2bbFLIHlty-YuqFZ3w=",
-			want: &ExperimentalURI{
-				params: url.Values{
-					"ref": []string{"ssb:message:sha256:g3hPVPDEO1Aj_uPl0-J2NlhFB2bbFLIHlty-YuqFZ3w="},
-				},
-			},
-			sigil: `%g3hPVPDEO1Aj/uPl0+J2NlhFB2bbFLIHlty+YuqFZ3w=.sha256`,
-			kind:  KindMessage,
-		},
-
-		// {
-		// 	name:  "experimental action",
-		// 	input: "ssb:?action=http-auth-start&sid=<SID>&sc=<SC>",
-		// },
 	}
 
 	for _, tc := range cases {
