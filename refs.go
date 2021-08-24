@@ -16,10 +16,16 @@ import (
 
 // Ref is the abstract interface all reference types should implement.
 type Ref interface {
+	Algo() RefAlgo
+
+	Sigil() string
+	ShortSigil() string
+
+	URI() CanonicalURI
+
+	// Deprecated
 	Ref() string      // returns the full reference
 	ShortRef() string // returns a shortend prefix
-
-	Algo() RefAlgo
 }
 
 type RefAlgo string
@@ -76,24 +82,6 @@ func NewMessageRefFromBytes(b []byte, algo RefAlgo) (MessageRef, error) {
 	return fr, nil
 }
 
-func (ref MessageRef) CopyHashTo(b []byte) error {
-	if len(b) != len(ref.hash) {
-		return ErrRefLen{algo: ref.algo, n: len(b)}
-	}
-	copy(b, ref.hash[:])
-	return nil
-}
-
-// Ref prints the full identifieir
-func (ref MessageRef) Ref() string {
-	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
-}
-
-// ShortRef prints a shortend version
-func (ref MessageRef) ShortRef() string {
-	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
-}
-
 func (ref MessageRef) Algo() RefAlgo {
 	return ref.algo
 }
@@ -104,6 +92,37 @@ func (ref MessageRef) Equal(other MessageRef) bool {
 	}
 
 	return bytes.Equal(ref.hash[:], other.hash[:])
+}
+
+func (ref MessageRef) CopyHashTo(b []byte) error {
+	if len(b) != len(ref.hash) {
+		return ErrRefLen{algo: ref.algo, n: len(b)}
+	}
+	copy(b, ref.hash[:])
+	return nil
+}
+
+// Sigil returns the MessageRef with the sigil %, it's base64 encoded hash and the used algo (currently only sha256)
+func (ref MessageRef) Sigil() string {
+	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
+}
+
+// ShortSigil prints a shortend version of Sigil()
+func (ref MessageRef) ShortSigil() string {
+	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
+}
+
+func (ref MessageRef) URI() CanonicalURI {
+	return CanonicalURI{ref}
+}
+
+// deprecated
+func (ref MessageRef) Ref() string {
+	return ref.Sigil()
+}
+
+func (ref MessageRef) ShortRef() string {
+	return ref.ShortSigil()
 }
 
 var (
@@ -292,14 +311,6 @@ func (ref FeedRef) PubKey() ed25519.PublicKey {
 	return ref.id[:]
 }
 
-func (ref FeedRef) Ref() string {
-	return fmt.Sprintf("@%s.%s", base64.StdEncoding.EncodeToString(ref.id[:]), ref.algo)
-}
-
-func (ref FeedRef) ShortRef() string {
-	return fmt.Sprintf("<@%s.%s>", base64.StdEncoding.EncodeToString(ref.id[:3]), ref.algo)
-}
-
 func (ref FeedRef) Algo() RefAlgo {
 	return ref.algo
 }
@@ -310,6 +321,27 @@ func (ref FeedRef) Equal(b FeedRef) bool {
 	// 	return false
 	// }
 	return bytes.Equal(ref.id[:], b.id[:])
+}
+
+func (ref FeedRef) Sigil() string {
+	return fmt.Sprintf("@%s.%s", base64.StdEncoding.EncodeToString(ref.id[:]), ref.algo)
+}
+
+func (ref FeedRef) ShortSigil() string {
+	return fmt.Sprintf("<@%s.%s>", base64.StdEncoding.EncodeToString(ref.id[:3]), ref.algo)
+}
+
+func (ref FeedRef) URI() CanonicalURI {
+	return CanonicalURI{ref}
+}
+
+// deprecated
+func (ref FeedRef) Ref() string {
+	return ref.Sigil()
+}
+
+func (ref FeedRef) ShortRef() string {
+	return ref.ShortSigil()
 }
 
 var (
@@ -446,15 +478,6 @@ func NewBlobRefFromBytes(b []byte, algo RefAlgo) (BlobRef, error) {
 	return ref, nil
 }
 
-// Ref returns the BlobRef with the sigil &, it's base64 encoded hash and the used algo (currently only sha256)
-func (ref BlobRef) Ref() string {
-	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
-}
-
-func (ref BlobRef) ShortRef() string {
-	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
-}
-
 func (ref BlobRef) Algo() RefAlgo {
 	return ref.algo
 }
@@ -465,6 +488,28 @@ func (ref BlobRef) CopyHashTo(b []byte) error {
 	}
 	copy(b, ref.hash[:])
 	return nil
+}
+
+// Sigil returns the BlobRef with the sigil &, it's base64 encoded hash and the used algo (currently only sha256)
+func (ref BlobRef) Sigil() string {
+	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
+}
+
+func (ref BlobRef) ShortSigil() string {
+	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
+}
+
+func (ref BlobRef) URI() CanonicalURI {
+	return CanonicalURI{ref}
+}
+
+// deprecated
+func (ref BlobRef) Ref() string {
+	return ref.Sigil()
+}
+
+func (ref BlobRef) ShortRef() string {
+	return ref.ShortSigil()
 }
 
 var emptyBlobRef = BlobRef{}
@@ -547,18 +592,37 @@ type AnyRef struct {
 	channel string
 }
 
+func (ar AnyRef) ShortSigil() string {
+	if ar.r == nil {
+		panic("empty ref")
+	}
+	return ar.r.ShortSigil()
+}
+
+func (ar AnyRef) Sigil() string {
+	if ar.r == nil {
+		panic("empty ref")
+	}
+	return ar.r.Sigil()
+}
+
+func (ar AnyRef) URI() CanonicalURI {
+	return CanonicalURI{ar}
+}
+
+// Deprecated
 func (ar AnyRef) ShortRef() string {
 	if ar.r == nil {
 		panic("empty ref")
 	}
-	return ar.r.ShortRef()
+	return ar.r.ShortSigil()
 }
 
 func (ar AnyRef) Ref() string {
 	if ar.r == nil {
 		panic("empty ref")
 	}
-	return ar.r.Ref()
+	return ar.r.Sigil()
 }
 
 func (ar AnyRef) Algo() RefAlgo {
