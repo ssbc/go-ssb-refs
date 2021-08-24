@@ -22,6 +22,8 @@ const (
 // URI is a SSB universal resource identifier.
 // It can be a canonical link for a message, feed or blob.
 type URI interface {
+	fmt.Stringer
+
 	Feed() (FeedRef, bool)
 	Message() (MessageRef, bool)
 	Blob() (BlobRef, bool)
@@ -126,6 +128,37 @@ type CanonicalURI struct {
 	ref Ref
 }
 
+func (c CanonicalURI) String() string {
+	var u url.URL
+	u.Scheme = "ssb"
+
+	var p string
+	switch rv := c.ref.(type) {
+	case FeedRef:
+		algo := c.ref.Algo()
+		if algo == RefAlgoFeedBendyButt {
+			algo = "bendybutt-v1"
+		}
+		p = fmt.Sprintf("feed/%s/", algo)
+		p += base64.URLEncoding.EncodeToString(rv.id[:])
+	case MessageRef:
+		algo := c.ref.Algo()
+		if algo == RefAlgoMessageBendyButt {
+			algo = "bendybutt-v1"
+		}
+		p = fmt.Sprintf("message/%s/", algo)
+		p += base64.URLEncoding.EncodeToString(rv.hash[:])
+	case BlobRef:
+		p = fmt.Sprintf("blob/%s/", c.ref.Algo())
+		p += base64.URLEncoding.EncodeToString(rv.hash[:])
+	default:
+		p = "undefined"
+	}
+	u.Opaque = p
+
+	return u.String()
+}
+
 func (c CanonicalURI) Kind() Kind {
 	switch c.ref.(type) {
 	case FeedRef:
@@ -171,6 +204,20 @@ type ExperimentalURI struct {
 	// Kind(), Feed(), Message() and Blob() call loadLazyCanon() to parse the "ref" argument just once
 	lazyCanonical *CanonicalURI
 	lazyErr       error
+}
+
+func (e ExperimentalURI) String() string {
+	var u url.URL
+	u.Scheme = "ssb"
+	u.Opaque = "experimental"
+
+	if e.lazyCanonical != nil {
+		e.params.Add("ref", e.lazyCanonical.ref.Sigil())
+	}
+
+	u.RawQuery = e.params.Encode()
+
+	return u.String()
 }
 
 func (e *ExperimentalURI) loadLazyCanon() *CanonicalURI {

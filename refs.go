@@ -18,7 +18,10 @@ import (
 type Ref interface {
 	Algo() RefAlgo
 
+	// Sigil returns the pre-URI string ala @foo=.ed25519, %msgkey=.sha256 or &blob=.sha256.
 	Sigil() string
+
+	// ShortSigil returns a truncated version of Sigil()
 	ShortSigil() string
 
 	URI() CanonicalURI

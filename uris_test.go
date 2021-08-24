@@ -8,6 +8,7 @@ import (
 	"log"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +19,7 @@ func TestParseSimpleURIs(t *testing.T) {
 		name  string
 		input string
 
-		want  URI
+		want  CanonicalURI
 		kind  Kind
 		sigil string
 
@@ -39,10 +40,10 @@ func TestParseSimpleURIs(t *testing.T) {
 
 		{
 			name:  "canon message (bendy)",
-			input: "ssb:message/bendybutt-v1/PR2-btDEO1AjXuPl0TJ2N_hFB2bbFLIHlty0VF1ncty=",
+			input: "ssb:message/bendybutt-v1/PR2-btDEO1AjXuPl0TJ2N_hFB2bbFLIHlty0VF1nctw=",
 			want: CanonicalURI{ref: MessageRef{
-				hash: [32]byte{131, 120, 79, 84, 240, 196, 59, 80, 35, 254, 227, 229, 211, 226, 118, 54, 88, 69, 7, 102, 219, 20, 178, 7, 150, 220, 190, 98, 234, 133, 103, 124},
-				algo: RefAlgoMessageSSB1,
+				hash: [32]uint8{0x3d, 0x1d, 0xbe, 0x6e, 0xd0, 0xc4, 0x3b, 0x50, 0x23, 0x5e, 0xe3, 0xe5, 0xd1, 0x32, 0x76, 0x37, 0xf8, 0x45, 0x7, 0x66, 0xdb, 0x14, 0xb2, 0x7, 0x96, 0xdc, 0xb4, 0x54, 0x5d, 0x67, 0x72, 0xdc},
+				algo: RefAlgoMessageBendyButt,
 			}},
 			sigil: `%PR2+btDEO1AjXuPl0TJ2N/hFB2bbFLIHlty0VF1nctw=.bbmsg-v1`,
 			kind:  KindMessage,
@@ -63,7 +64,7 @@ func TestParseSimpleURIs(t *testing.T) {
 			name:  "canon feed (bendy butt)",
 			input: "ssb:feed/bendybutt-v1/APaWWDs8g73EZFUMfW37RBULtFEjwKNbDczvdYiRXtA=",
 			want: CanonicalURI{ref: FeedRef{
-				id:   [32]byte{0xfa, 0x86, 0x96, 0x58, 0x3b, 0x3c, 0x83, 0xbd, 0xc4, 0x64, 0x55, 0xc, 0x7d, 0x6d, 0xfb, 0x47, 0xf5, 0xb, 0xb4, 0x51, 0x23, 0xc0, 0xa3, 0x7f, 0xd, 0xcc, 0xef, 0x75, 0x88, 0xa1, 0x8d, 0xb5},
+				id:   [32]uint8{0x0, 0xf6, 0x96, 0x58, 0x3b, 0x3c, 0x83, 0xbd, 0xc4, 0x64, 0x55, 0xc, 0x7d, 0x6d, 0xfb, 0x44, 0x15, 0xb, 0xb4, 0x51, 0x23, 0xc0, 0xa3, 0x5b, 0xd, 0xcc, 0xef, 0x75, 0x88, 0x91, 0x5e, 0xd0},
 				algo: RefAlgoFeedBendyButt,
 			}},
 			sigil: `@APaWWDs8g73EZFUMfW37RBULtFEjwKNbDczvdYiRXtA=.bbfeed-v1`,
@@ -85,12 +86,13 @@ func TestParseSimpleURIs(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			r := require.New(t)
+			a := assert.New(t)
 
 			got, err := ParseURI(tc.input)
 			if tc.err == nil {
 				r.NoError(err)
-				r.Equal(tc.kind, got.Kind(), "wrong kind")
-				// r.EqualValues(tc.want, got)
+				a.Equal(tc.kind, got.Kind(), "wrong kind")
+				a.Equal(tc.want, got)
 				var (
 					ref Ref
 					ok  bool
@@ -108,7 +110,10 @@ func TestParseSimpleURIs(t *testing.T) {
 				default:
 					t.Fatal("oops? unhandled kind")
 				}
-				r.Equal(tc.sigil, ref.Ref(), "wrong sigil")
+
+				a.Equal(tc.sigil, ref.Ref(), "wrong sigil")
+
+				a.Equal(tc.input, got.String(), "did not turn back into the uri")
 			} else {
 				r.EqualError(err, tc.err.Error())
 			}
