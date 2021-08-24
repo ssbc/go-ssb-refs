@@ -46,6 +46,7 @@ func RoomAlias(roomID, userID, alias, signature string) URIOption {
 
 func NewExperimentalURI(opts ...URIOption) (*url.URL, error) {
 	var e ExperimentalURI
+
 	e.params = make(url.Values)
 
 	for i, opt := range opts {
@@ -54,9 +55,11 @@ func NewExperimentalURI(opts ...URIOption) (*url.URL, error) {
 			return nil, fmt.Errorf("NewExperimentalURI: option %d failed: %w", i, err)
 		}
 	}
-	var u url.URL
 
+	var u url.URL
 	u.Scheme = "ssb"
 	u.RawQuery = e.params.Encode()
+	u.Opaque = "experimental"
+
 	return &u, nil
 }

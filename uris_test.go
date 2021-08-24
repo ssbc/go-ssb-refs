@@ -151,9 +151,9 @@ func ExampleNewExperimentalURIs() {
 
 	// Output:
 	// simple multiserver address:
-	// ssb:?action=add-pub&msaddr=net%3Ahost%3Aport~shs%3AQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE%3D
+	// ssb:experimental?action=add-pub&msaddr=net%3Ahost%3Aport~shs%3AQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE%3D
 	// rooms2 invite:
-	// ssb:?action=join-room&invite=some-code&msaddr=net%3Ahost%3Aport~shs%3AQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE%3D
+	// ssb:experimental?action=join-room&invite=some-code&msaddr=net%3Ahost%3Aport~shs%3AQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE%3D
 	// rooms2 alias:
-	// ssb:?action=consume-alias&msaddr=net%3Ahost%3Aport~shs%3AQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE%3D&roomID=roomID&userID=userID
+	// ssb:experimental?action=consume-alias&msaddr=net%3Ahost%3Aport~shs%3AQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE%3D&roomID=roomID&userID=userID
 }
