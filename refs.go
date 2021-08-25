@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"golang.org/x/crypto/ed25519"
@@ -29,6 +30,8 @@ type Ref interface {
 	// Deprecated
 	Ref() string      // returns the full reference
 	ShortRef() string // returns a shortend prefix
+
+	encoding.TextMarshaler
 }
 
 type RefAlgo string
@@ -40,15 +43,15 @@ const (
 	RefAlgoBlobSSB1    RefAlgo = RefAlgoMessageSSB1
 
 	RefAlgoFeedBamboo    RefAlgo = "bamboo"
-	RefAlgoMessageBamboo RefAlgo = "bamboo"
+	RefAlgoMessageBamboo RefAlgo = RefAlgoFeedBamboo
 
-	RefAlgoFeedBendyButt    RefAlgo = "bbfeed-v1"
-	RefAlgoMessageBendyButt RefAlgo = "bbmsg-v1"
+	RefAlgoFeedBendyButt    RefAlgo = "bendybutt-v1"
+	RefAlgoMessageBendyButt RefAlgo = RefAlgoFeedBendyButt
 
 	RefAlgoCloakedGroup RefAlgo = "cloaked"
 
-	RefAlgoFeedGabby    RefAlgo = "ggfeed-v1" // cbor based chain
-	RefAlgoMessageGabby RefAlgo = "ggmsg-v1"
+	RefAlgoFeedGabby    RefAlgo = "gabbygrove-v1" // cbor based chain
+	RefAlgoMessageGabby RefAlgo = RefAlgoFeedGabby
 )
 
 func ParseRef(str string) (Ref, error) {
@@ -134,21 +137,30 @@ var (
 )
 
 func (mr MessageRef) MarshalText() ([]byte, error) {
-	if len(mr.hash) == 0 {
-		return []byte{}, nil
+	if mr.algo == RefAlgoMessageSSB1 {
+		return []byte(mr.Sigil()), nil
 	}
-	return []byte(mr.Ref()), nil
+	asURI := CanonicalURI{mr}
+	return []byte(asURI.String()), nil
 }
 
 func (mr *MessageRef) UnmarshalText(text []byte) error {
-	if len(text) == 0 {
-		*mr = MessageRef{}
-		return nil
-	}
 	newRef, err := ParseMessageRef(string(text))
 	if err != nil {
 		return fmt.Errorf("message(%s): unmarshal failed: %w", string(text), err)
 	}
+	*mr = newRef
+
+	asURI, err := parseCaononicalURI(string(text))
+	if err != nil {
+		return err
+	}
+
+	newRef, ok := asURI.Message()
+	if !ok {
+		return fmt.Errorf("ssb uri is not a Message ref: %s", asURI.Kind())
+	}
+
 	*mr = newRef
 	return nil
 }
@@ -159,9 +171,6 @@ var (
 )
 
 func (mr MessageRef) MarshalBinary() ([]byte, error) {
-	if len(mr.hash) == 0 {
-		return []byte{}, nil
-	}
 	return []byte(mr.Ref()), nil
 }
 
@@ -353,69 +362,77 @@ var (
 )
 
 func (fr FeedRef) MarshalText() ([]byte, error) {
-	return []byte(fr.Ref()), nil
+	if fr.algo == RefAlgoFeedSSB1 {
+		return []byte(fr.Sigil()), nil
+	}
+	asURI := CanonicalURI{fr}
+	return []byte(asURI.String()), nil
 }
 
 func (fr *FeedRef) UnmarshalText(text []byte) error {
-	if len(text) == 0 {
-		*fr = FeedRef{}
+	newRef, err := ParseFeedRef(string(text))
+	if err == nil {
+		*fr = newRef
 		return nil
 	}
-	newRef, err := ParseFeedRef(string(text))
+	asURI, err := parseCaononicalURI(string(text))
 	if err != nil {
 		return err
 	}
-	*fr = newRef
+
+	newFeedRef, ok := asURI.Feed()
+	if !ok {
+		return fmt.Errorf("ssb uri is not a feed ref: %s", asURI.Kind())
+	}
+
+	*fr = newFeedRef
 	return nil
 }
 
-var (
-	_ encoding.BinaryMarshaler   = (*FeedRef)(nil)
-	_ encoding.BinaryUnmarshaler = (*FeedRef)(nil)
-)
+// var (
+// 	_ encoding.BinaryMarshaler   = (*FeedRef)(nil)
+// 	_ encoding.BinaryUnmarshaler = (*FeedRef)(nil)
+// )
 
-func (mr FeedRef) MarshalBinary() ([]byte, error) {
-	if len(mr.id) == 0 {
-		return []byte{}, nil
-	}
-	return []byte(mr.Ref()), nil
-}
+// func (mr FeedRef) MarshalBinary() ([]byte, error) {
+// 	return []byte(mr.Ref()), nil
+// }
 
-func (mr *FeedRef) UnmarshalBinary(text []byte) error {
-	if len(text) == 0 {
-		*mr = FeedRef{}
-		return nil
-	}
-	newRef, err := ParseFeedRef(string(text))
-	if err != nil {
-		return fmt.Errorf("feed(%s): unmarshal failed: %w", string(text), err)
-	}
-	*mr = newRef
-	return nil
-}
+// func (mr *FeedRef) UnmarshalBinary(text []byte) error {
+// 	if len(text) == 0 {
+// 		*mr = FeedRef{}
+// 		return nil
+// 	}
+// 	newRef, err := ParseFeedRef(string(text))
+// 	if err != nil {
+// 		return fmt.Errorf("feed(%s): unmarshal failed: %w", string(text), err)
+// 	}
+// 	*mr = newRef
+// 	return nil
+// }
 
-func (r *FeedRef) Scan(raw interface{}) error {
-	switch v := raw.(type) {
-	// TODO: add an extra byte/flag bits to denote algo and types
+// func (r *FeedRef) Scan(raw interface{}) error {
+// 	switch v := raw.(type) {
+// 	// TODO: add an extra byte/flag bits to denote algo and types
 
-	// case []byte:
-	// 	if len(v) != 32 {
-	// 		return fmt.Errorf("feedRef/Scan: wrong length: %d", len(v))
-	// 	}
-	// 	(*r).ID = v
-	// 	(*r).Algo = "ed25519"
+// 	// case []byte:
+// 	// 	if len(v) != 32 {
+// 	// 		return fmt.Errorf("feedRef/Scan: wrong length: %d", len(v))
+// 	// 	}
+// 	// 	(*r).ID = v
+// 	// 	(*r).Algo = "ed25519"
 
-	case string:
-		fr, err := ParseFeedRef(v)
-		if err != nil {
-			return fmt.Errorf("feedRef/Scan: failed to serialize from string: %w", err)
-		}
-		*r = fr
-	default:
-		return fmt.Errorf("feedRef/Scan: unhandled type %T (see TODO)", raw)
-	}
-	return nil
-}
+// 	case string:
+// 		fr, err := ParseFeedRef(v)
+// 		if err != nil {
+// 			return fmt.Errorf("feedRef/Scan: failed to serialize from string: %w", err)
+// 		}
+// 		*r = fr
+// 	default:
+// 		return fmt.Errorf("feedRef/Scan: unhandled type %T (see TODO)", raw)
+// 	}
+// 	return nil
+// }
 
 var (
 	emptyFeedRef = FeedRef{}
@@ -652,15 +669,21 @@ func (ar AnyRef) IsChannel() (string, bool) {
 	return ar.channel, ok
 }
 
-func (ar *AnyRef) MarshalJSON() ([]byte, error) {
+func (ar AnyRef) MarshalJSON() ([]byte, error) {
 	if ar.r == nil {
 		if ar.channel != "" {
 			return []byte(`"` + ar.channel + `"`), nil
 		}
 		return nil, fmt.Errorf("anyRef: not a channel and not a ref")
 	}
-	refStr := ar.Ref()
-	return []byte(`"` + refStr + `"`), nil
+	refStr, err := ar.r.MarshalText()
+	out := append([]byte(`"`), refStr...)
+	out = append(out, []byte(`"`)...)
+	return out, err
+}
+
+func (ar AnyRef) MarshalText() ([]byte, error) {
+	return ar.r.MarshalText()
 }
 
 func (ar *AnyRef) UnmarshalJSON(b []byte) error {
@@ -680,11 +703,22 @@ func (ar *AnyRef) UnmarshalJSON(b []byte) error {
 	}
 
 	newRef, err := ParseRef(refStr)
-	if err != nil {
-		return fmt.Errorf("ssb/anyRef: parsing (%q) failed: %w", refStr, err)
+	if err == nil {
+		ar.r = newRef
+		return nil
 	}
 
-	ar.r = newRef
+	parsedURL, err := url.Parse(refStr)
+	if err != nil {
+		return fmt.Errorf("ssb/anyRef: parsing (%q) as URL failed: %w", refStr, err)
+	}
+
+	asURI, err := parseCaononicalURI(parsedURL.Opaque)
+	if err != nil {
+		return fmt.Errorf("ssb/anyRef: parsing (%q) as ssb-uri failed: %w", parsedURL.Opaque, err)
+	}
+
+	ar.r = asURI.ref
 	return nil
 }
 

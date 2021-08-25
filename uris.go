@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+//go:generate stringer -trimprefix Kind -type Kind
+
 type Kind uint
 
 const (
@@ -76,12 +78,9 @@ func parseCaononicalURI(input string) (CanonicalURI, error) {
 		var r MessageRef
 		r.algo = RefAlgo(parts[1])
 
-		if !(r.algo == RefAlgoMessageSSB1 || r.algo == RefAlgoMessageGabby) {
-			if r.algo == "bendybutt-v1" {
-				r.algo = RefAlgoMessageBendyButt
-			} else {
-				return c, ErrInvalidRefAlgo
-			}
+		if !(r.algo == RefAlgoMessageSSB1 || r.algo == RefAlgoMessageGabby || r.algo == RefAlgoMessageBendyButt) {
+			fmt.Println(parts)
+			return c, ErrInvalidRefAlgo
 		}
 
 		copy(r.hash[:], data)
@@ -92,12 +91,8 @@ func parseCaononicalURI(input string) (CanonicalURI, error) {
 		var r FeedRef
 		r.algo = RefAlgo(parts[1])
 
-		if !(r.algo == RefAlgoFeedSSB1 || r.algo == RefAlgoFeedGabby) {
-			if r.algo == "bendybutt-v1" {
-				r.algo = RefAlgoFeedBendyButt
-			} else {
-				return c, ErrInvalidRefAlgo
-			}
+		if !(r.algo == RefAlgoFeedSSB1 || r.algo == RefAlgoFeedGabby || r.algo == RefAlgoFeedBendyButt) {
+			return c, ErrInvalidRefAlgo
 		}
 
 		copy(r.id[:], data)
@@ -116,6 +111,7 @@ func parseCaononicalURI(input string) (CanonicalURI, error) {
 
 		c.ref = r
 	default:
+		fmt.Println(parts)
 		return c, ErrInvalidRef
 	}
 
@@ -136,16 +132,10 @@ func (c CanonicalURI) String() string {
 	switch rv := c.ref.(type) {
 	case FeedRef:
 		algo := c.ref.Algo()
-		if algo == RefAlgoFeedBendyButt {
-			algo = "bendybutt-v1"
-		}
 		p = fmt.Sprintf("feed/%s/", algo)
 		p += base64.URLEncoding.EncodeToString(rv.id[:])
 	case MessageRef:
 		algo := c.ref.Algo()
-		if algo == RefAlgoMessageBendyButt {
-			algo = "bendybutt-v1"
-		}
 		p = fmt.Sprintf("message/%s/", algo)
 		p += base64.URLEncoding.EncodeToString(rv.hash[:])
 	case BlobRef:

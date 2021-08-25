@@ -39,7 +39,7 @@ func TestParseRef(t *testing.T) {
 		// 	algo: RefAlgoFeed?????,
 		// }},
 
-		{"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.ggfeed-v1", nil, FeedRef{
+		{"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.gabbygrove-v1", nil, FeedRef{
 			id:   [32]byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
 			algo: RefAlgoFeedGabby,
 		}},
@@ -59,7 +59,7 @@ func TestParseRef(t *testing.T) {
 			algo: RefAlgoCloakedGroup,
 		}},
 
-		{"%2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=.ggmsg-v1", nil, MessageRef{
+		{"%2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=.gabbygrove-v1", nil, MessageRef{
 			hash: [32]byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},
 			algo: RefAlgoMessageGabby,
 		}},
@@ -110,7 +110,12 @@ func TestAnyRef(t *testing.T) {
 			algo: RefAlgoMessageSSB1,
 		}},
 
-		{"%2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=.ggmsg-v1", MessageRef{
+		{"ssb:message/bendybutt-v1/2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=", MessageRef{
+			hash: [32]byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},
+			algo: RefAlgoMessageBendyButt,
+		}},
+
+		{"ssb:message/gabbygrove-v1/2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=", MessageRef{
 			hash: [32]byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},
 			algo: RefAlgoMessageGabby,
 		}},
