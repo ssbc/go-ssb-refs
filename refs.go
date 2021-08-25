@@ -25,9 +25,6 @@ type Ref interface {
 	// ShortSigil returns a truncated version of Sigil()
 	ShortSigil() string
 
-	// Deprecated
-	Ref() string      // returns the full reference
-	ShortRef() string // returns a shortend prefix
 	// URI prints the reference as a ssb-uri, following https://github.com/ssb-ngi-pointer/ssb-uri-spec
 	URI() string
 
@@ -120,15 +117,6 @@ func (ref MessageRef) ShortSigil() string {
 
 func (ref MessageRef) URI() string {
 	return CanonicalURI{ref}.String()
-}
-
-// deprecated
-func (ref MessageRef) Ref() string {
-	return ref.Sigil()
-}
-
-func (ref MessageRef) ShortRef() string {
-	return ref.ShortSigil()
 }
 
 var (
@@ -304,15 +292,6 @@ func (ref FeedRef) URI() string {
 	return CanonicalURI{ref}.String()
 }
 
-// deprecated
-func (ref FeedRef) Ref() string {
-	return ref.Sigil()
-}
-
-func (ref FeedRef) ShortRef() string {
-	return ref.ShortSigil()
-}
-
 var (
 	_ encoding.TextMarshaler   = (*FeedRef)(nil)
 	_ encoding.TextUnmarshaler = (*FeedRef)(nil)
@@ -435,15 +414,6 @@ func (ref BlobRef) URI() string {
 	return CanonicalURI{ref}.String()
 }
 
-// deprecated
-func (ref BlobRef) Ref() string {
-	return ref.Sigil()
-}
-
-func (ref BlobRef) ShortRef() string {
-	return ref.ShortSigil()
-}
-
 var emptyBlobRef = BlobRef{}
 
 // ParseBlobRef uses ParseRef and checks that it returns a *BlobRef
@@ -540,21 +510,6 @@ func (ar AnyRef) Sigil() string {
 
 func (ar AnyRef) URI() string {
 	return CanonicalURI{ar}.String()
-}
-
-// Deprecated
-func (ar AnyRef) ShortRef() string {
-	if ar.r == nil {
-		panic("empty ref")
-	}
-	return ar.r.ShortSigil()
-}
-
-func (ar AnyRef) Ref() string {
-	if ar.r == nil {
-		panic("empty ref")
-	}
-	return ar.r.Sigil()
 }
 
 func (ar AnyRef) Algo() RefAlgo {
