@@ -165,48 +165,6 @@ func (mr *MessageRef) UnmarshalText(text []byte) error {
 	return nil
 }
 
-var (
-	_ encoding.BinaryMarshaler   = (*MessageRef)(nil)
-	_ encoding.BinaryUnmarshaler = (*MessageRef)(nil)
-)
-
-func (mr MessageRef) MarshalBinary() ([]byte, error) {
-	return []byte(mr.Ref()), nil
-}
-
-func (mr *MessageRef) UnmarshalBinary(text []byte) error {
-	if len(text) == 0 {
-		*mr = MessageRef{}
-		return nil
-	}
-	newRef, err := ParseMessageRef(string(text))
-	if err != nil {
-		return fmt.Errorf("message(%s): unmarshal failed: %w", string(text), err)
-	}
-	*mr = newRef
-	return nil
-}
-
-func (r *MessageRef) Scan(raw interface{}) error {
-	switch v := raw.(type) {
-	case []byte:
-		if len(v) != 32 {
-			return fmt.Errorf("msgRef/Scan: wrong length: %d", len(v))
-		}
-		copy(r.hash[:], v)
-		r.algo = RefAlgoMessageSSB1
-	case string:
-		mr, err := ParseMessageRef(v)
-		if err != nil {
-			return fmt.Errorf("msgRef/Scan: failed to serialze from string: %w", err)
-		}
-		*r = mr
-	default:
-		return fmt.Errorf("msgRef/Scan: unhandled type %T", raw)
-	}
-	return nil
-}
-
 func ParseMessageRef(str string) (MessageRef, error) {
 	if len(str) == 0 {
 		return emptyMsgRef, fmt.Errorf("ssb: msgRef empty")
@@ -388,51 +346,6 @@ func (fr *FeedRef) UnmarshalText(text []byte) error {
 	*fr = newFeedRef
 	return nil
 }
-
-// var (
-// 	_ encoding.BinaryMarshaler   = (*FeedRef)(nil)
-// 	_ encoding.BinaryUnmarshaler = (*FeedRef)(nil)
-// )
-
-// func (mr FeedRef) MarshalBinary() ([]byte, error) {
-// 	return []byte(mr.Ref()), nil
-// }
-
-// func (mr *FeedRef) UnmarshalBinary(text []byte) error {
-// 	if len(text) == 0 {
-// 		*mr = FeedRef{}
-// 		return nil
-// 	}
-// 	newRef, err := ParseFeedRef(string(text))
-// 	if err != nil {
-// 		return fmt.Errorf("feed(%s): unmarshal failed: %w", string(text), err)
-// 	}
-// 	*mr = newRef
-// 	return nil
-// }
-
-// func (r *FeedRef) Scan(raw interface{}) error {
-// 	switch v := raw.(type) {
-// 	// TODO: add an extra byte/flag bits to denote algo and types
-
-// 	// case []byte:
-// 	// 	if len(v) != 32 {
-// 	// 		return fmt.Errorf("feedRef/Scan: wrong length: %d", len(v))
-// 	// 	}
-// 	// 	(*r).ID = v
-// 	// 	(*r).Algo = "ed25519"
-
-// 	case string:
-// 		fr, err := ParseFeedRef(v)
-// 		if err != nil {
-// 			return fmt.Errorf("feedRef/Scan: failed to serialize from string: %w", err)
-// 		}
-// 		*r = fr
-// 	default:
-// 		return fmt.Errorf("feedRef/Scan: unhandled type %T (see TODO)", raw)
-// 	}
-// 	return nil
-// }
 
 var (
 	emptyFeedRef = FeedRef{}
