@@ -28,6 +28,7 @@ type Ref interface {
 	// URI prints the reference as a ssb-uri, following https://github.com/ssb-ngi-pointer/ssb-uri-spec
 	URI() string
 
+	fmt.Stringer
 	encoding.TextMarshaler
 }
 
@@ -64,7 +65,15 @@ func ParseRef(str string) (Ref, error) {
 	case "&":
 		return ParseBlobRef(str)
 	default:
-		return nil, ErrInvalidRefType
+		asURL, err := url.Parse(str)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse as URL: %s: %w", err, ErrInvalidRefType)
+		}
+		if asURL.Scheme != "ssb" {
+			return nil, fmt.Errorf("expected ssb protocl scheme on URL: %q: %w", str, ErrInvalidRefType)
+		}
+		asSSBURI, err := parseCaononicalURI(asURL.Opaque)
+		return asSSBURI.ref, err
 	}
 }
 
@@ -117,6 +126,13 @@ func (ref MessageRef) ShortSigil() string {
 
 func (ref MessageRef) URI() string {
 	return CanonicalURI{ref}.String()
+}
+
+func (ref MessageRef) String() string {
+	if ref.algo == RefAlgoMessageSSB1 {
+		return ref.Sigil()
+	}
+	return ref.URI()
 }
 
 var (
@@ -196,7 +212,7 @@ type MessageRefs []MessageRef
 func (mr *MessageRefs) String() string {
 	var s []string
 	for _, r := range *mr {
-		s = append(s, r.Ref())
+		s = append(s, r.String())
 	}
 	return strings.Join(s, ", ")
 }
@@ -290,6 +306,13 @@ func (ref FeedRef) ShortSigil() string {
 
 func (ref FeedRef) URI() string {
 	return CanonicalURI{ref}.String()
+}
+
+func (ref FeedRef) String() string {
+	if ref.algo == RefAlgoFeedSSB1 {
+		return ref.Sigil()
+	}
+	return ref.URI()
 }
 
 var (
@@ -414,6 +437,13 @@ func (ref BlobRef) URI() string {
 	return CanonicalURI{ref}.String()
 }
 
+func (ref BlobRef) String() string {
+	if ref.algo == RefAlgoBlobSSB1 {
+		return ref.Sigil()
+	}
+	return ref.URI()
+}
+
 var emptyBlobRef = BlobRef{}
 
 // ParseBlobRef uses ParseRef and checks that it returns a *BlobRef
@@ -471,7 +501,7 @@ func (br BlobRef) IsValid() error {
 
 // MarshalText encodes the BlobRef using Ref()
 func (br BlobRef) MarshalText() ([]byte, error) {
-	return []byte(br.Ref()), nil
+	return []byte(br.String()), nil
 }
 
 // UnmarshalText uses ParseBlobRef
@@ -510,6 +540,10 @@ func (ar AnyRef) Sigil() string {
 
 func (ar AnyRef) URI() string {
 	return CanonicalURI{ar}.String()
+}
+
+func (ref AnyRef) String() string {
+	return ref.r.String()
 }
 
 func (ar AnyRef) Algo() RefAlgo {

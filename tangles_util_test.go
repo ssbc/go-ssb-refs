@@ -25,7 +25,7 @@ func TestBranchHelperHops(t *testing.T) {
 	sorter.fillLookup()
 
 	for i := len(msgs) - 1; i >= 0; i-- {
-		if h := sorter.hopsToRoot(msgs[i].Key().Ref(), 0); h != i {
+		if h := sorter.hopsToRoot(msgs[i].Key().String(), 0); h != i {
 			t.Error("wrong p1", h)
 		}
 	}

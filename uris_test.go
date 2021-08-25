@@ -111,7 +111,7 @@ func TestParseSimpleURIs(t *testing.T) {
 					t.Fatal("oops? unhandled kind")
 				}
 
-				a.Equal(tc.sigil, ref.Ref(), "wrong sigil")
+				a.Equal(tc.sigil, ref.Sigil(), "wrong sigil")
 
 				a.Equal(tc.input, got.String(), "did not turn back into the uri")
 			} else {

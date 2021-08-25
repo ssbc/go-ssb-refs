@@ -39,7 +39,7 @@ func TestParseRef(t *testing.T) {
 		// 	algo: RefAlgoFeed?????,
 		// }},
 
-		{"@ye+QM09iPcDJD6YvQYjoQc7sLF/IFhmNbEqgdzQo3lQ=.gabbygrove-v1", nil, FeedRef{
+		{"ssb:feed/gabbygrove-v1/ye-QM09iPcDJD6YvQYjoQc7sLF_IFhmNbEqgdzQo3lQ=", nil, FeedRef{
 			id:   [32]byte{201, 239, 144, 51, 79, 98, 61, 192, 201, 15, 166, 47, 65, 136, 232, 65, 206, 236, 44, 95, 200, 22, 25, 141, 108, 74, 160, 119, 52, 40, 222, 84},
 			algo: RefAlgoFeedGabby,
 		}},
@@ -54,12 +54,12 @@ func TestParseRef(t *testing.T) {
 			algo: RefAlgoMessageSSB1,
 		}},
 
-		{`%vof09Dhy3YUat1ylIUVGaCjotAFxE8iGbF6QxLlCWWc=.cloaked`, nil, MessageRef{
-			hash: [32]byte{190, 135, 244, 244, 56, 114, 221, 133, 26, 183, 92, 165, 33, 69, 70, 104, 40, 232, 180, 1, 113, 19, 200, 134, 108, 94, 144, 196, 185, 66, 89, 103},
-			algo: RefAlgoCloakedGroup,
-		}},
+		// {`ssb:message/cloaked/vof09Dhy3YUat1ylIUVGaCjotAFxE8iGbF6QxLlCWWc=`, nil, MessageRef{
+		// 	hash: [32]byte{190, 135, 244, 244, 56, 114, 221, 133, 26, 183, 92, 165, 33, 69, 70, 104, 40, 232, 180, 1, 113, 19, 200, 134, 108, 94, 144, 196, 185, 66, 89, 103},
+		// 	algo: RefAlgoCloakedGroup,
+		// }},
 
-		{"%2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=.gabbygrove-v1", nil, MessageRef{
+		{"ssb:message/gabbygrove-v1/2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=", nil, MessageRef{
 			hash: [32]byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},
 			algo: RefAlgoMessageGabby,
 		}},
@@ -70,12 +70,12 @@ func TestParseRef(t *testing.T) {
 			if !a.NoError(err, "got error on test %d (%v)", i+1, tc.ref) {
 				continue
 			}
-			input := a.Equal(tc.ref, tc.want.Ref(), "test %d input<>output failed", i+1)
-			want := a.Equal(tc.want.Ref(), r.Ref(), "test %d re-encode failed", i+1)
+			input := a.Equal(tc.ref, tc.want.String(), "test %d input<>output failed", i+1)
+			want := a.Equal(tc.want.String(), r.String(), "test %d re-encode failed", i+1)
 			if !input || !want {
 				t.Logf("%+v", r)
 			}
-			t.Log(i+1, r.ShortRef())
+			t.Log(i+1, r.ShortSigil())
 		} else {
 			a.True(errors.Is(err, tc.err), "%d wrong error: %s", i+1, err)
 		}
@@ -137,7 +137,7 @@ func TestAnyRef(t *testing.T) {
 		r.NoError(err, "case %d unmarshal", i)
 
 		r.Len(gotPost.Mentions, 1)
-		a.Equal(tc.want.Ref(), gotPost.Mentions[0].Link.Ref(), "test %d re-encode failed", i)
+		a.Equal(tc.want.String(), gotPost.Mentions[0].Link.String(), "test %d re-encode failed", i)
 
 		if i == 2 {
 			br, ok := gotPost.Mentions[0].Link.IsBlob()
@@ -160,7 +160,7 @@ func TestParseBranches(t *testing.T) {
 	err := json.Unmarshal(input, &got)
 	r.NoError(err)
 	r.Equal(1, len(got.Refs))
-	r.Equal(got.Refs[0].Ref(), "%HG1p299uO2nCenG6YwR3DG33lLpcALAS/PI6/BP5dB0=.sha256")
+	r.Equal(got.Refs[0].String(), "%HG1p299uO2nCenG6YwR3DG33lLpcALAS/PI6/BP5dB0=.sha256")
 
 	var asArray = []byte(`{
 		"refs": [
@@ -172,8 +172,8 @@ func TestParseBranches(t *testing.T) {
 	err = json.Unmarshal(asArray, &got)
 	require.NoError(t, err)
 	r.Equal(2, len(got.Refs))
-	r.Equal(got.Refs[0].Ref(), `%hCM+q/zsq8vseJKwIAAJMMdsAmWeSfG9cs8ed3uOXCc=.sha256`)
-	r.Equal(got.Refs[1].Ref(), `%yJAzwPO7HSjvHRp7wrVGO4sbo9GHSwKk0BXOSiUr+bo=.sha256`)
+	r.Equal(got.Refs[0].String(), `%hCM+q/zsq8vseJKwIAAJMMdsAmWeSfG9cs8ed3uOXCc=.sha256`)
+	r.Equal(got.Refs[1].String(), `%yJAzwPO7HSjvHRp7wrVGO4sbo9GHSwKk0BXOSiUr+bo=.sha256`)
 
 	var empty = []byte(`{
 		"refs": []
