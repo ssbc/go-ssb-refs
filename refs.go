@@ -25,11 +25,11 @@ type Ref interface {
 	// ShortSigil returns a truncated version of Sigil()
 	ShortSigil() string
 
-	URI() CanonicalURI
-
 	// Deprecated
 	Ref() string      // returns the full reference
 	ShortRef() string // returns a shortend prefix
+	// URI prints the reference as a ssb-uri, following https://github.com/ssb-ngi-pointer/ssb-uri-spec
+	URI() string
 
 	encoding.TextMarshaler
 }
@@ -118,8 +118,8 @@ func (ref MessageRef) ShortSigil() string {
 	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
 }
 
-func (ref MessageRef) URI() CanonicalURI {
-	return CanonicalURI{ref}
+func (ref MessageRef) URI() string {
+	return CanonicalURI{ref}.String()
 }
 
 // deprecated
@@ -286,10 +286,9 @@ func (ref FeedRef) Algo() RefAlgo {
 }
 
 func (ref FeedRef) Equal(b FeedRef) bool {
-	// TODO: invset time in shs1.1 to signal the format correctly
-	// if ref.Algo != b.Algo {
-	// 	return false
-	// }
+	if ref.algo != b.algo {
+		return false
+	}
 	return bytes.Equal(ref.id[:], b.id[:])
 }
 
@@ -301,8 +300,8 @@ func (ref FeedRef) ShortSigil() string {
 	return fmt.Sprintf("<@%s.%s>", base64.StdEncoding.EncodeToString(ref.id[:3]), ref.algo)
 }
 
-func (ref FeedRef) URI() CanonicalURI {
-	return CanonicalURI{ref}
+func (ref FeedRef) URI() string {
+	return CanonicalURI{ref}.String()
 }
 
 // deprecated
@@ -432,8 +431,8 @@ func (ref BlobRef) ShortSigil() string {
 	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
 }
 
-func (ref BlobRef) URI() CanonicalURI {
-	return CanonicalURI{ref}
+func (ref BlobRef) URI() string {
+	return CanonicalURI{ref}.String()
 }
 
 // deprecated
@@ -539,8 +538,8 @@ func (ar AnyRef) Sigil() string {
 	return ar.r.Sigil()
 }
 
-func (ar AnyRef) URI() CanonicalURI {
-	return CanonicalURI{ar}
+func (ar AnyRef) URI() string {
+	return CanonicalURI{ar}.String()
 }
 
 // Deprecated

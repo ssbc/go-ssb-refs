@@ -33,7 +33,7 @@ func TestFormatFeedRef(t *testing.T) {
 		},
 		{
 			name: "gabby",
-			in:   mustMakeFeed(t, seq(0, 32), "ggfeed-v1"),
+			in:   mustMakeFeed(t, seq(0, 32), "gabbygrove-v1"),
 			out:  append([]byte{tfk.TypeFeed, tfk.FormatFeedGabbyGrove}, seq(0, 32)...),
 		},
 		{
@@ -43,7 +43,7 @@ func TestFormatFeedRef(t *testing.T) {
 		},
 		{
 			name: "metafeed",
-			in:   mustMakeFeed(t, seq(0, 32), "bbfeed-v1"),
+			in:   mustMakeFeed(t, seq(0, 32), "bendybutt-v1"),
 			out:  append([]byte{tfk.TypeFeed, tfk.FormatFeedBendyButt}, seq(0, 32)...),
 		},
 		{
@@ -72,7 +72,7 @@ func TestFormatFeedRef(t *testing.T) {
 
 			feedRef, err := f.Feed()
 			require.NoError(t, err)
-			require.NotNil(t, feedRef)
+
 			require.True(t, feedRef.Equal(tc.in))
 
 			encoded, err := f.MarshalBinary()
@@ -111,7 +111,7 @@ func TestFormatMessageRef(t *testing.T) {
 		},
 		{
 			name: "gabby",
-			in:   mustMakeMessage(t, seq(0, 32), "ggmsg-v1"),
+			in:   mustMakeMessage(t, seq(0, 32), "gabbygrove-v1"),
 
 			out: append([]byte{tfk.TypeMessage, tfk.FormatMessageGabbyGrove}, seq(0, 32)...),
 		},
@@ -122,7 +122,7 @@ func TestFormatMessageRef(t *testing.T) {
 		},
 		{
 			name: "metafeed",
-			in:   mustMakeMessage(t, seq(0, 32), "bbmsg-v1"),
+			in:   mustMakeMessage(t, seq(0, 32), "bendybutt-v1"),
 			out:  append([]byte{tfk.TypeMessage, tfk.FormatMessageMetaFeed}, seq(0, 32)...),
 		},
 		{
@@ -154,7 +154,7 @@ func TestFormatMessageRef(t *testing.T) {
 
 			msgRef, err := m.Message()
 			require.NoError(t, err)
-			require.NotNil(t, msgRef)
+
 			require.True(t, msgRef.Equal(tc.in), "got %s and %s", msgRef.Ref(), tc.in.Ref())
 
 			encoded, err := m.MarshalBinary()
