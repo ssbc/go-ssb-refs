@@ -361,7 +361,22 @@ func ParseFeedRef(str string) (FeedRef, error) {
 
 	split := strings.Split(str[1:], ".")
 	if len(split) < 2 {
-		return emptyFeedRef, ErrInvalidRef
+		asURL, err := url.Parse(str)
+		if err != nil {
+			return emptyFeedRef, fmt.Errorf("failed to parse as URL: %s: %w", err, ErrInvalidRef)
+		}
+		if asURL.Scheme != "ssb" {
+			return emptyFeedRef, fmt.Errorf("expected ssb protocol scheme on URL: %q: %w", str, ErrInvalidRef)
+		}
+		asSSBURI, err := parseCaononicalURI(asURL.Opaque)
+		if err != nil {
+			return emptyFeedRef, err
+		}
+		feedRef, ok := asSSBURI.Feed()
+		if !ok {
+			return emptyFeedRef, fmt.Errorf("ssbURI is not a feed ref")
+		}
+		return feedRef, nil
 	}
 
 	raw, err := base64.StdEncoding.DecodeString(split[0])
