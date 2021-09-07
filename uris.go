@@ -73,13 +73,14 @@ func parseCaononicalURI(input string) (CanonicalURI, error) {
 		return c, fmt.Errorf("ssb-uri: expected valid base64 url data: %w", err)
 	}
 
+	parts[0] = strings.TrimPrefix(parts[0], "ssb:")
+
 	switch parts[0] {
 	case "message":
 		var r MessageRef
 		r.algo = RefAlgo(parts[1])
 
 		if !(r.algo == RefAlgoMessageSSB1 || r.algo == RefAlgoMessageGabby || r.algo == RefAlgoMessageBendyButt) {
-			fmt.Println(parts)
 			return c, ErrInvalidRefAlgo
 		}
 
@@ -111,7 +112,7 @@ func parseCaononicalURI(input string) (CanonicalURI, error) {
 
 		c.ref = r
 	default:
-		fmt.Println(parts)
+
 		return c, ErrInvalidRef
 	}
 

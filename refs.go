@@ -152,19 +152,8 @@ func (mr *MessageRef) UnmarshalText(input []byte) error {
 	txt := string(input)
 
 	newRef, err := ParseMessageRef(txt)
-	if err == nil {
-		*mr = newRef
-		return nil
-	}
-
-	asURI, err := parseCaononicalURI(txt)
 	if err != nil {
 		return err
-	}
-
-	newRef, ok := asURI.Message()
-	if !ok {
-		return fmt.Errorf("ssb uri is not a Message ref: %s", asURI.Kind())
 	}
 
 	*mr = newRef
@@ -178,6 +167,15 @@ func ParseMessageRef(str string) (MessageRef, error) {
 
 	split := strings.Split(str[1:], ".")
 	if len(split) < 2 {
+		asURI, err := parseCaononicalURI(str)
+		if err != nil {
+			return emptyMsgRef, err
+		}
+
+		newRef, ok := asURI.Message()
+		if ok {
+			return newRef, nil
+		}
 		return emptyMsgRef, ErrInvalidRef
 	}
 
