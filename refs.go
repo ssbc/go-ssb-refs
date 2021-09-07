@@ -141,7 +141,7 @@ var (
 )
 
 func (mr MessageRef) MarshalText() ([]byte, error) {
-	if mr.algo == RefAlgoMessageSSB1 {
+	if mr.algo == RefAlgoMessageSSB1 || mr.algo == RefAlgoCloakedGroup {
 		return []byte(mr.Sigil()), nil
 	}
 	asURI := CanonicalURI{mr}
