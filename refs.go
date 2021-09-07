@@ -148,14 +148,16 @@ func (mr MessageRef) MarshalText() ([]byte, error) {
 	return []byte(asURI.String()), nil
 }
 
-func (mr *MessageRef) UnmarshalText(text []byte) error {
-	newRef, err := ParseMessageRef(string(text))
-	if err != nil {
-		return fmt.Errorf("message(%s): unmarshal failed: %w", string(text), err)
-	}
-	*mr = newRef
+func (mr *MessageRef) UnmarshalText(input []byte) error {
+	txt := string(input)
 
-	asURI, err := parseCaononicalURI(string(text))
+	newRef, err := ParseMessageRef(txt)
+	if err == nil {
+		*mr = newRef
+		return nil
+	}
+
+	asURI, err := parseCaononicalURI(txt)
 	if err != nil {
 		return err
 	}
@@ -251,7 +253,6 @@ func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 		var err error
 		newArr[0], err = ParseMessageRef(string(text[1 : len(text)-1]))
 		if err != nil {
-			fmt.Println(string(text))
 			return fmt.Errorf("messageRefs single unmarshal failed: %w", err)
 		}
 
@@ -328,13 +329,16 @@ func (fr FeedRef) MarshalText() ([]byte, error) {
 	return []byte(asURI.String()), nil
 }
 
-func (fr *FeedRef) UnmarshalText(text []byte) error {
-	newRef, err := ParseFeedRef(string(text))
+func (fr *FeedRef) UnmarshalText(input []byte) error {
+	txt := string(input)
+
+	newRef, err := ParseFeedRef(txt)
 	if err == nil {
 		*fr = newRef
 		return nil
 	}
-	asURI, err := parseCaononicalURI(string(text))
+
+	asURI, err := parseCaononicalURI(txt)
 	if err != nil {
 		return err
 	}
