@@ -54,10 +54,10 @@ func TestParseRef(t *testing.T) {
 			algo: RefAlgoMessageSSB1,
 		}},
 
-		// {`ssb:message/cloaked/vof09Dhy3YUat1ylIUVGaCjotAFxE8iGbF6QxLlCWWc=`, nil, MessageRef{
-		// 	hash: [32]byte{190, 135, 244, 244, 56, 114, 221, 133, 26, 183, 92, 165, 33, 69, 70, 104, 40, 232, 180, 1, 113, 19, 200, 134, 108, 94, 144, 196, 185, 66, 89, 103},
-		// 	algo: RefAlgoCloakedGroup,
-		// }},
+		{`%vof09Dhy3YUat1ylIUVGaCjotAFxE8iGbF6QxLlCWWc=.cloaked`, nil, MessageRef{
+			hash: [32]byte{190, 135, 244, 244, 56, 114, 221, 133, 26, 183, 92, 165, 33, 69, 70, 104, 40, 232, 180, 1, 113, 19, 200, 134, 108, 94, 144, 196, 185, 66, 89, 103},
+			algo: RefAlgoCloakedGroup,
+		}},
 
 		{"ssb:message/gabbygrove-v1/2jDrrJEeG7PQcCLcisISqarMboNpnwyfxLnwU1ijOjc=", nil, MessageRef{
 			hash: [32]byte{218, 48, 235, 172, 145, 30, 27, 179, 208, 112, 34, 220, 138, 194, 18, 169, 170, 204, 110, 131, 105, 159, 12, 159, 196, 185, 240, 83, 88, 163, 58, 55},

@@ -129,7 +129,7 @@ func (ref MessageRef) URI() string {
 }
 
 func (ref MessageRef) String() string {
-	if ref.algo == RefAlgoMessageSSB1 {
+	if ref.algo == RefAlgoMessageSSB1 || ref.algo == RefAlgoCloakedGroup {
 		return ref.Sigil()
 	}
 	return ref.URI()
