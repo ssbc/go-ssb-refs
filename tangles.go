@@ -84,15 +84,6 @@ func (by *ByPrevious) Len() int {
 	return len(by.Items)
 }
 
-func (by ByPrevious) currentIndex(key string) int {
-	for idxBr, findBr := range by.Items {
-		if findBr.Key().String() == key {
-			return idxBr
-		}
-	}
-	return -1
-}
-
 func (by ByPrevious) pointsTo(x, y string) bool {
 	pointsTo, has := by.after[x]
 	if !has {
@@ -151,11 +142,7 @@ func (by *ByPrevious) Less(i int, j int) bool {
 	}
 
 	hopsI, hopsJ := by.hopsToRoot(keyI, 0), by.hopsToRoot(keyJ, 0)
-	if hopsI < hopsJ {
-		return true
-	}
-
-	return false
+	return hopsI < hopsJ
 }
 
 // Swap switches the two items (for sort.Sort)

@@ -6,8 +6,10 @@ import (
 	refs "go.mindeco.de/ssb-refs"
 )
 
+// Message represents a reference to a message
 type Message struct{ value }
 
+// MessageFromRef creates a new tfk reference for serialization from a plain reference
 func MessageFromRef(r refs.MessageRef) (*Message, error) {
 	var m Message
 	m.tipe = TypeMessage

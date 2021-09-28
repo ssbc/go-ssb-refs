@@ -12,8 +12,10 @@ import (
 
 //go:generate stringer -trimprefix Kind -type Kind
 
+// Kind represents the type of uri reference (as of writing, feed, message or blob)
 type Kind uint
 
+// constant definitions of the known kinds of uri references
 const (
 	KindUnknown Kind = iota
 	KindFeed
@@ -43,7 +45,6 @@ var (
 
 // ParseURI either returns a Canonical or an Experimental URI
 func ParseURI(input string) (URI, error) {
-
 	u, err := url.Parse(input)
 	if err != nil {
 		return nil, fmt.Errorf("url.Parse failed: %w", err)
@@ -150,6 +151,7 @@ func (c CanonicalURI) String() string {
 	return u.String()
 }
 
+// Kind implements refs.URI
 func (c CanonicalURI) Kind() Kind {
 	switch c.ref.(type) {
 	case FeedRef:
@@ -163,6 +165,7 @@ func (c CanonicalURI) Kind() Kind {
 	}
 }
 
+// Feed returns the underlying feed reference and true, if the URI is indeed for a feed
 func (c CanonicalURI) Feed() (FeedRef, bool) {
 	r, ok := c.ref.(FeedRef)
 	if !ok {
@@ -171,6 +174,7 @@ func (c CanonicalURI) Feed() (FeedRef, bool) {
 	return r, true
 }
 
+// Message returns the underlying message reference and true, if the URI is indeed for a message
 func (c CanonicalURI) Message() (MessageRef, bool) {
 	r, ok := c.ref.(MessageRef)
 	if !ok {
@@ -179,6 +183,7 @@ func (c CanonicalURI) Message() (MessageRef, bool) {
 	return r, true
 }
 
+// Blob returns the underlying blob reference and true, if the URI is indeed for a blob
 func (c CanonicalURI) Blob() (BlobRef, bool) {
 	r, ok := c.ref.(BlobRef)
 	if !ok {
@@ -238,6 +243,7 @@ func (e *ExperimentalURI) tryCanonicalRef() error {
 	return nil
 }
 
+// Kind implements refs.URI
 func (e *ExperimentalURI) Kind() Kind {
 	c := e.loadLazyCanon()
 	if e.lazyErr != nil || c == nil {
@@ -246,6 +252,7 @@ func (e *ExperimentalURI) Kind() Kind {
 	return c.Kind()
 }
 
+// Feed returns the underlying feed reference and true, if the URI is indeed for a feed
 func (e *ExperimentalURI) Feed() (FeedRef, bool) {
 	c := e.loadLazyCanon()
 	if e.lazyErr != nil || c == nil {
@@ -254,6 +261,7 @@ func (e *ExperimentalURI) Feed() (FeedRef, bool) {
 	return c.Feed()
 }
 
+// Message returns the underlying message reference and true, if the URI is indeed for a message
 func (e *ExperimentalURI) Message() (MessageRef, bool) {
 	c := e.loadLazyCanon()
 	if e.lazyErr != nil || c == nil {
@@ -262,6 +270,7 @@ func (e *ExperimentalURI) Message() (MessageRef, bool) {
 	return c.Message()
 }
 
+// Blob returns the underlying blob reference and true, if the URI is indeed for a blob
 func (e *ExperimentalURI) Blob() (BlobRef, bool) {
 	c := e.loadLazyCanon()
 	if e.lazyErr != nil || c == nil {

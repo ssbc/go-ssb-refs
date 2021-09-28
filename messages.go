@@ -41,6 +41,7 @@ type Message interface {
 	ValueContentJSON() json.RawMessage
 }
 
+// Contact represents a (un)follow or (un)block message
 type Contact struct {
 	Type      string  `json:"type"`
 	Contact   FeedRef `json:"contact"`
@@ -48,6 +49,7 @@ type Contact struct {
 	Blocking  bool    `json:"blocking"`
 }
 
+// NewContactFollow returns a initialzed follow message
 func NewContactFollow(who FeedRef) Contact {
 	return Contact{
 		Type:      "contact",
@@ -56,6 +58,7 @@ func NewContactFollow(who FeedRef) Contact {
 	}
 }
 
+// NewContactBlock returns a initialzed block message
 func NewContactBlock(who FeedRef) Contact {
 	return Contact{
 		Type:     "contact",
@@ -64,6 +67,7 @@ func NewContactBlock(who FeedRef) Contact {
 	}
 }
 
+// UnmarshalJSON implements JSON deserialization of type:contact
 func (c *Contact) UnmarshalJSON(b []byte) error {
 	if len(b) > 0 && b[0] == '"' {
 		return ErrWrongType{want: "contact", has: "private.box?"}
@@ -107,6 +111,7 @@ func (c *Contact) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// About represents metadata updates about a feed like name, descriptin or image
 type About struct {
 	Type        string   `json:"type"`
 	About       FeedRef  `json:"about"`
@@ -115,6 +120,7 @@ type About struct {
 	Image       *BlobRef `json:"image,omitempty"`
 }
 
+// NewAboutName creats a new message to update one's name
 func NewAboutName(who FeedRef, name string) *About {
 	return &About{
 		Type:  "about",
@@ -123,6 +129,7 @@ func NewAboutName(who FeedRef, name string) *About {
 	}
 }
 
+// NewAboutImage creats a new message to update one's image
 func NewAboutImage(who FeedRef, img *BlobRef) *About {
 	return &About{
 		Type:  "about",
@@ -131,6 +138,7 @@ func NewAboutImage(who FeedRef, img *BlobRef) *About {
 	}
 }
 
+// UnmarshalJSON implements JSON deserialization of type:about
 func (a *About) UnmarshalJSON(b []byte) error {
 	var priv string
 	err := json.Unmarshal(b, &priv)
@@ -194,6 +202,7 @@ func (a *About) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// Typed helps to quickly get the type of a message
 type Typed struct {
 	Value
 	Content struct {
@@ -201,6 +210,7 @@ type Typed struct {
 	} `json:"content"`
 }
 
+// ValuePost helps to deserialze a type:post message
 type ValuePost struct {
 	Value
 	Content Post `json:"content"`
@@ -214,6 +224,7 @@ func NewPost(text string) Post {
 	}
 }
 
+// Post represents a textual (markdown) message with some metadata.
 type Post struct {
 	Type     string      `json:"type"`
 	Text     string      `json:"text"`
@@ -227,27 +238,37 @@ type Post struct {
 	Recps MessageRefs `json:"recps,omitempty"`
 }
 
+// Tangles represent a set of tangle information ala ssb-tangles v2 ( https://gitlab.com/tangle-js/tangle-graph )
+// for general information about tangles, you might want to read:
+// https://github.com/cn-uofbasel/ssbdrv/blob/1f7e6b11373ef6f73415f0e9c62f1ade29739251/doc/tangle.md
 type Tangles map[string]TanglePoint
 
+// TanglePoint represent a single reference point to a common message (root)
+// and the _previous_ messages that were seen at the time
+// in aggregate with other such messages this creates a _happend before_ relation betwee them.
 type TanglePoint struct {
 	Root     *MessageRef `json:"root"`
 	Previous MessageRefs `json:"previous"`
 }
 
+// Mention can link feeds/authors by name, channels or other messages.
 type Mention struct {
 	Link AnyRef `json:"link,omitempty"`
 	Name string `json:"name,omitempty"`
 }
 
+// NewMention creates a mention:name field that should be added to a message, like a post.
 func NewMention(r Ref, name string) Mention {
 	return Mention{Link: AnyRef{r: r}, Name: name}
 }
 
+// ValueVote is a convenience wrapper if the content is wrapped in a value
 type ValueVote struct {
 	Value
 	Content Vote `json:"content"`
 }
 
+// Vote represents a 'like' message
 type Vote struct {
 	Type string `json:"type"`
 	Vote struct {
@@ -272,12 +293,14 @@ type OldAddress struct {
 	Key  FeedRef `json:"key"`
 }
 
+// KeyValueRaw uses json.RawMessage for the content portion, this helps of the content needs to be deserialzed manually or not at all
 type KeyValueRaw struct {
-	Key_      MessageRef            `json:"key"`
+	Key_      MessageRef            `json:"key"` // Key_ is using the underline here to not conflict with the refs.Message interface (for history ceasons)
 	Value     Value                 `json:"value"`
 	Timestamp encodedTime.Millisecs `json:"timestamp"`
 }
 
+// KeyValueAsMap helps if there are no expectations about the content of a message
 type KeyValueAsMap struct {
 	Key       MessageRef            `json:"key"`
 	Value     Value                 `json:"value"`
@@ -286,38 +309,47 @@ type KeyValueAsMap struct {
 
 var _ Message = (*KeyValueRaw)(nil)
 
+// Seq implements the refs.Message interface
 func (kvr KeyValueRaw) Seq() int64 {
 	return kvr.Value.Sequence
 }
 
+// Key keyimplements the refs.Message interface
 func (kvr KeyValueRaw) Key() MessageRef {
 	return kvr.Key_
 }
 
+// Author implements the refs.Message interface
 func (kvr KeyValueRaw) Author() FeedRef {
 	return kvr.Value.Author
 }
 
+// Previous implements the refs.Message interface
 func (kvr KeyValueRaw) Previous() *MessageRef {
 	return kvr.Value.Previous
 }
 
+// Claimed implements the refs.Message interface
 func (kvr KeyValueRaw) Claimed() time.Time {
 	return time.Time(kvr.Value.Timestamp)
 }
 
+// Received implements the refs.Message interface
 func (kvr KeyValueRaw) Received() time.Time {
 	return time.Time(kvr.Timestamp)
 }
 
+// ContentBytes implements the refs.Message interface
 func (kvr KeyValueRaw) ContentBytes() []byte {
 	return kvr.Value.Content
 }
 
+// ValueContent implements the refs.Message interface
 func (kvr KeyValueRaw) ValueContent() *Value {
 	return &kvr.Value
 }
 
+// ValueContentJSON implements the refs.Message interface
 func (kvr KeyValueRaw) ValueContentJSON() json.RawMessage {
 	jsonB, err := json.Marshal(kvr.ValueContent())
 	if err != nil {

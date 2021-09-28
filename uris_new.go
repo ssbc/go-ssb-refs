@@ -9,8 +9,10 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+// URIOption allow to customaize an experimental ssb-uri
 type URIOption func(e *ExperimentalURI) error
 
+// MSAddr adds a multiserver address to an experimental URI
 func MSAddr(hostAndPort string, pubKey ed25519.PublicKey) URIOption {
 	return func(e *ExperimentalURI) error {
 
@@ -27,6 +29,7 @@ func MSAddr(hostAndPort string, pubKey ed25519.PublicKey) URIOption {
 	}
 }
 
+// RoomInvite adds a rooms2 invite to an experimental URI
 func RoomInvite(code string) URIOption {
 	return func(e *ExperimentalURI) error {
 		e.params.Set("invite", code)
@@ -35,6 +38,7 @@ func RoomInvite(code string) URIOption {
 	}
 }
 
+// RoomAlias adds a rooms2 alias to an experimental URI
 func RoomAlias(roomID, userID, alias, signature string) URIOption {
 	return func(e *ExperimentalURI) error {
 		e.params.Set("roomID", roomID)
@@ -44,6 +48,7 @@ func RoomAlias(roomID, userID, alias, signature string) URIOption {
 	}
 }
 
+// NewExperimentalURI constructs an experimental ssb uri from a slice of options
 func NewExperimentalURI(opts ...URIOption) (*url.URL, error) {
 	var e ExperimentalURI
 

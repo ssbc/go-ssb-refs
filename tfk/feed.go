@@ -6,8 +6,10 @@ import (
 	refs "go.mindeco.de/ssb-refs"
 )
 
+// Feed represents a reference to a feed
 type Feed struct{ value }
 
+// FeedFromRef creates a new tfk reference for serialization from a plain reference
 func FeedFromRef(r refs.FeedRef) (*Feed, error) {
 	var f Feed
 	f.tipe = TypeFeed

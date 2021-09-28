@@ -32,9 +32,10 @@ type Ref interface {
 	encoding.TextMarshaler
 }
 
+// RefAlgo define a set of known/understood algorithms to reference feeds, messages or blobs
 type RefAlgo string
 
-// Some constant identifiers
+// Some constant identifiers for the supported references
 const (
 	RefAlgoFeedSSB1    RefAlgo = "ed25519" // ssb v1 (legacy, crappy encoding)
 	RefAlgoMessageSSB1 RefAlgo = "sha256"  // scuttlebutt happend anyway
@@ -52,6 +53,7 @@ const (
 	RefAlgoMessageGabby RefAlgo = RefAlgoFeedGabby
 )
 
+// ParseRef either returns an parsed and understood reference or an error
 func ParseRef(str string) (Ref, error) {
 	if len(str) == 0 {
 		return nil, ErrInvalidRef
@@ -83,56 +85,63 @@ type MessageRef struct {
 	algo RefAlgo
 }
 
+// NewMessageRefFromBytes allows to create a message reference from raw bytes
 func NewMessageRefFromBytes(b []byte, algo RefAlgo) (MessageRef, error) {
 	fr := MessageRef{
 		algo: algo,
 	}
 	n := copy(fr.hash[:], b)
-	if n != 32 {
+	if n != 32 { // TODO: support references of different lengths.
 		return MessageRef{}, ErrRefLen{algo: fr.algo, n: n}
 	}
 	return fr, nil
 }
 
-func (ref MessageRef) Algo() RefAlgo {
-	return ref.algo
+// Algo implements the refs.Ref interface
+func (mr MessageRef) Algo() RefAlgo {
+	return mr.algo
 }
 
-func (ref MessageRef) Equal(other MessageRef) bool {
-	if ref.algo != other.algo {
+// Equal compares two references with each other
+func (mr MessageRef) Equal(other MessageRef) bool {
+	if mr.algo != other.algo {
 		return false
 	}
 
-	return bytes.Equal(ref.hash[:], other.hash[:])
+	return bytes.Equal(mr.hash[:], other.hash[:])
 }
 
-func (ref MessageRef) CopyHashTo(b []byte) error {
-	if len(b) != len(ref.hash) {
-		return ErrRefLen{algo: ref.algo, n: len(b)}
+// CopyHashTo copies the internal hash data somewhere else
+// the target needs to have enough space, otherwise an error is returned.
+func (mr MessageRef) CopyHashTo(b []byte) error {
+	if len(b) != len(mr.hash) {
+		return ErrRefLen{algo: mr.algo, n: len(b)}
 	}
-	copy(b, ref.hash[:])
+	copy(b, mr.hash[:])
 	return nil
 }
 
 // Sigil returns the MessageRef with the sigil %, it's base64 encoded hash and the used algo (currently only sha256)
-func (ref MessageRef) Sigil() string {
-	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
+func (mr MessageRef) Sigil() string {
+	return fmt.Sprintf("%%%s.%s", base64.StdEncoding.EncodeToString(mr.hash[:]), mr.algo)
 }
 
 // ShortSigil prints a shortend version of Sigil()
-func (ref MessageRef) ShortSigil() string {
-	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
+func (mr MessageRef) ShortSigil() string {
+	return fmt.Sprintf("<%%%s.%s>", base64.StdEncoding.EncodeToString(mr.hash[:3]), mr.algo)
 }
 
-func (ref MessageRef) URI() string {
-	return CanonicalURI{ref}.String()
+// URI returns the reference in ssb-uri form, no matter it's type
+func (mr MessageRef) URI() string {
+	return CanonicalURI{mr}.String()
 }
 
-func (ref MessageRef) String() string {
-	if ref.algo == RefAlgoMessageSSB1 || ref.algo == RefAlgoCloakedGroup {
-		return ref.Sigil()
+// String implements the refs.Ref interface and returns a ssb-uri or sigil depending on the type
+func (mr MessageRef) String() string {
+	if mr.algo == RefAlgoMessageSSB1 || mr.algo == RefAlgoCloakedGroup {
+		return mr.Sigil()
 	}
-	return ref.URI()
+	return mr.URI()
 }
 
 var (
@@ -140,6 +149,7 @@ var (
 	_ encoding.TextUnmarshaler = (*MessageRef)(nil)
 )
 
+// MarshalText implements encoding.TextMarshaler
 func (mr MessageRef) MarshalText() ([]byte, error) {
 	if mr.algo == RefAlgoMessageSSB1 || mr.algo == RefAlgoCloakedGroup {
 		return []byte(mr.Sigil()), nil
@@ -148,6 +158,7 @@ func (mr MessageRef) MarshalText() ([]byte, error) {
 	return []byte(asURI.String()), nil
 }
 
+// UnmarshalText implements encoding.TextUnmarshaler
 func (mr *MessageRef) UnmarshalText(input []byte) error {
 	txt := string(input)
 
@@ -160,6 +171,7 @@ func (mr *MessageRef) UnmarshalText(input []byte) error {
 	return nil
 }
 
+// ParseMessageRef returns a message ref from a string, if it's valid
 func ParseMessageRef(str string) (MessageRef, error) {
 	if len(str) == 0 {
 		return emptyMsgRef, fmt.Errorf("ssb: msgRef empty")
@@ -207,8 +219,10 @@ func ParseMessageRef(str string) (MessageRef, error) {
 	return newMsg, nil
 }
 
+// MessageRefs holds a slice of multiple message references
 type MessageRefs []MessageRef
 
+// String turns a slice of references by String()ifiyng and joining them with a comma
 func (mr *MessageRefs) String() string {
 	var s []string
 	for _, r := range *mr {
@@ -217,6 +231,8 @@ func (mr *MessageRefs) String() string {
 	return strings.Join(s, ", ")
 }
 
+// UnmarshalJSON implements JSON deserialization for a list of message references.
+// It also supports empty and `null` as well as a single refrence as a string ("%foo" and ["%foo"] are both returned as the right-hand case)
 func (mr *MessageRefs) UnmarshalJSON(text []byte) error {
 	if len(text) == 0 {
 		*mr = nil
@@ -265,6 +281,7 @@ type FeedRef struct {
 	algo RefAlgo
 }
 
+// NewFeedRefFromBytes creats a feed reference directly from some bytes
 func NewFeedRefFromBytes(b []byte, algo RefAlgo) (FeedRef, error) {
 	fr := FeedRef{
 		algo: algo,
@@ -276,42 +293,45 @@ func NewFeedRefFromBytes(b []byte, algo RefAlgo) (FeedRef, error) {
 	return fr, nil
 }
 
-func NewLegacyFeedRefFromBytes(b []byte) (FeedRef, error) {
-	return NewFeedRefFromBytes(b, RefAlgoFeedSSB1)
+// PubKey returns the crypto/ed25519 public key representation
+func (fr FeedRef) PubKey() ed25519.PublicKey {
+	return fr.id[:]
 }
 
-func (ref FeedRef) PubKey() ed25519.PublicKey {
-	return ref.id[:]
+// Algo implements the refs.Ref interface
+func (fr FeedRef) Algo() RefAlgo {
+	return fr.algo
 }
 
-func (ref FeedRef) Algo() RefAlgo {
-	return ref.algo
-}
-
-func (ref FeedRef) Equal(b FeedRef) bool {
-	if ref.algo != b.algo {
+// Equal compares two references with each other
+func (fr FeedRef) Equal(b FeedRef) bool {
+	if fr.algo != b.algo {
 		return false
 	}
-	return bytes.Equal(ref.id[:], b.id[:])
+	return bytes.Equal(fr.id[:], b.id[:])
 }
 
-func (ref FeedRef) Sigil() string {
-	return fmt.Sprintf("@%s.%s", base64.StdEncoding.EncodeToString(ref.id[:]), ref.algo)
+// Sigil returns the FeedRef as a string with the sigil @, it's base64 encoded hash and the used algo
+func (fr FeedRef) Sigil() string {
+	return fmt.Sprintf("@%s.%s", base64.StdEncoding.EncodeToString(fr.id[:]), fr.algo)
 }
 
-func (ref FeedRef) ShortSigil() string {
-	return fmt.Sprintf("<@%s.%s>", base64.StdEncoding.EncodeToString(ref.id[:3]), ref.algo)
+// ShortSigil returns a truncated version of Sigil()
+func (fr FeedRef) ShortSigil() string {
+	return fmt.Sprintf("<@%s.%s>", base64.StdEncoding.EncodeToString(fr.id[:3]), fr.algo)
 }
 
-func (ref FeedRef) URI() string {
-	return CanonicalURI{ref}.String()
+// URI returns the reference in ssb-uri form, no matter it's type
+func (fr FeedRef) URI() string {
+	return CanonicalURI{fr}.String()
 }
 
-func (ref FeedRef) String() string {
-	if ref.algo == RefAlgoFeedSSB1 {
-		return ref.Sigil()
+// String implements the refs.Ref interface and returns a ssb-uri or sigil depending on the type
+func (fr FeedRef) String() string {
+	if fr.algo == RefAlgoFeedSSB1 {
+		return fr.Sigil()
 	}
-	return ref.URI()
+	return fr.URI()
 }
 
 var (
@@ -319,6 +339,7 @@ var (
 	_ encoding.TextUnmarshaler = (*FeedRef)(nil)
 )
 
+// MarshalText implements encoding.TextMarshaler
 func (fr FeedRef) MarshalText() ([]byte, error) {
 	if fr.algo == RefAlgoFeedSSB1 {
 		return []byte(fr.Sigil()), nil
@@ -327,6 +348,7 @@ func (fr FeedRef) MarshalText() ([]byte, error) {
 	return []byte(asURI.String()), nil
 }
 
+// UnmarshalText uses ParseFeedRef
 func (fr *FeedRef) UnmarshalText(input []byte) error {
 	txt := string(input)
 
@@ -418,6 +440,7 @@ type BlobRef struct {
 	algo RefAlgo
 }
 
+// NewBlobRefFromBytes allows to create a blob reference from raw bytes
 func NewBlobRefFromBytes(b []byte, algo RefAlgo) (BlobRef, error) {
 	ref := BlobRef{
 		algo: algo,
@@ -429,36 +452,42 @@ func NewBlobRefFromBytes(b []byte, algo RefAlgo) (BlobRef, error) {
 	return ref, nil
 }
 
-func (ref BlobRef) Algo() RefAlgo {
-	return ref.algo
+// Algo implements the refs.Ref interface
+func (br BlobRef) Algo() RefAlgo {
+	return br.algo
 }
 
-func (ref BlobRef) CopyHashTo(b []byte) error {
-	if n := len(b); n != len(ref.hash) {
+// CopyHashTo copies the internal hash data somewhere else
+// the target needs to have enough space, otherwise an error is returned.
+func (br BlobRef) CopyHashTo(b []byte) error {
+	if n := len(b); n != len(br.hash) {
 		return ErrRefLen{algo: "target", n: n}
 	}
-	copy(b, ref.hash[:])
+	copy(b, br.hash[:])
 	return nil
 }
 
 // Sigil returns the BlobRef with the sigil &, it's base64 encoded hash and the used algo (currently only sha256)
-func (ref BlobRef) Sigil() string {
-	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(ref.hash[:]), ref.algo)
+func (br BlobRef) Sigil() string {
+	return fmt.Sprintf("&%s.%s", base64.StdEncoding.EncodeToString(br.hash[:]), br.algo)
 }
 
-func (ref BlobRef) ShortSigil() string {
-	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(ref.hash[:3]), ref.algo)
+// ShortSigil returns a truncated version of Sigil()
+func (br BlobRef) ShortSigil() string {
+	return fmt.Sprintf("<&%s.%s>", base64.StdEncoding.EncodeToString(br.hash[:3]), br.algo)
 }
 
-func (ref BlobRef) URI() string {
-	return CanonicalURI{ref}.String()
+// URI returns the reference in ssb-uri form, no matter it's type
+func (br BlobRef) URI() string {
+	return CanonicalURI{br}.String()
 }
 
-func (ref BlobRef) String() string {
-	if ref.algo == RefAlgoBlobSSB1 {
-		return ref.Sigil()
+// String implements the refs.Ref interface and returns a ssb-uri or sigil depending on the type
+func (br BlobRef) String() string {
+	if br.algo == RefAlgoBlobSSB1 {
+		return br.Sigil()
 	}
-	return ref.URI()
+	return br.URI()
 }
 
 var emptyBlobRef = BlobRef{}
@@ -499,13 +528,15 @@ func ParseBlobRef(str string) (BlobRef, error) {
 	return newBlob, nil
 }
 
-func (ref BlobRef) Equal(b BlobRef) bool {
-	if ref.algo != b.algo {
+// Equal compares two references with each other
+func (br BlobRef) Equal(other BlobRef) bool {
+	if br.algo != other.algo {
 		return false
 	}
-	return bytes.Equal(ref.hash[:], b.hash[:])
+	return bytes.Equal(br.hash[:], other.hash[:])
 }
 
+// IsValid checks if the RefAlgo is known and the length of the data is as expected
 func (br BlobRef) IsValid() error {
 	if br.algo != RefAlgoBlobSSB1 {
 		return fmt.Errorf("unknown hash algorithm %q", br.algo)
@@ -516,7 +547,7 @@ func (br BlobRef) IsValid() error {
 	return nil
 }
 
-// MarshalText encodes the BlobRef using Ref()
+// MarshalText encodes the BlobRef using String()
 func (br BlobRef) MarshalText() ([]byte, error) {
 	return []byte(br.String()), nil
 }
@@ -535,12 +566,15 @@ func (br *BlobRef) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// AnyRef can hold any support reference type, as well as a channel name.
+// Use the Is*() functions to get the underlying values.
 type AnyRef struct {
 	r Ref
 
 	channel string
 }
 
+// ShortSigil returns a truncated version of Sigil()
 func (ar AnyRef) ShortSigil() string {
 	if ar.r == nil {
 		panic("empty ref")
@@ -548,6 +582,7 @@ func (ar AnyRef) ShortSigil() string {
 	return ar.r.ShortSigil()
 }
 
+// Sigil returns the classic way to encode a reference (starting with @, % or &, depending on the)
 func (ar AnyRef) Sigil() string {
 	if ar.r == nil {
 		panic("empty ref")
@@ -555,38 +590,46 @@ func (ar AnyRef) Sigil() string {
 	return ar.r.Sigil()
 }
 
+// URI returns the reference in ssb-uri form, no matter it's type
 func (ar AnyRef) URI() string {
 	return CanonicalURI{ar}.String()
 }
 
-func (ref AnyRef) String() string {
-	return ref.r.String()
+// String implements the refs.Ref interface and returns a ssb-uri or sigil depending on the type
+func (ar AnyRef) String() string {
+	return ar.r.String()
 }
 
+// Algo implements the refs.Ref interface
 func (ar AnyRef) Algo() RefAlgo {
 	return ar.r.Algo()
 }
 
+// IsBlob returns (the blob reference, true) or (_, false) if the underlying type matches
 func (ar AnyRef) IsBlob() (BlobRef, bool) {
 	br, ok := ar.r.(BlobRef)
 	return br, ok
 }
 
+// IsFeed returns (the feed reference, true) or (_, false) if the underlying type matches
 func (ar AnyRef) IsFeed() (FeedRef, bool) {
 	r, ok := ar.r.(FeedRef)
 	return r, ok
 }
 
+// IsMessage returns (the message reference, true) or (_, false) if the underlying type matches
 func (ar AnyRef) IsMessage() (MessageRef, bool) {
 	r, ok := ar.r.(MessageRef)
 	return r, ok
 }
 
+// IsChannel returns (the channel name, true) or (_, false) if the underlying type matches
 func (ar AnyRef) IsChannel() (string, bool) {
 	ok := ar.channel != ""
 	return ar.channel, ok
 }
 
+// MarshalJSON turns the underlying reference into a JSON string
 func (ar AnyRef) MarshalJSON() ([]byte, error) {
 	if ar.r == nil {
 		if ar.channel != "" {
@@ -600,10 +643,12 @@ func (ar AnyRef) MarshalJSON() ([]byte, error) {
 	return out, err
 }
 
+// MarshalText implements encoding.TextMarshaler
 func (ar AnyRef) MarshalText() ([]byte, error) {
 	return ar.r.MarshalText()
 }
 
+// UnmarshalJSON implements JSON deserialization for any supported reference type, and #channel names as well
 func (ar *AnyRef) UnmarshalJSON(b []byte) error {
 	if string(b[0:2]) == `"#` {
 		ar.channel = string(b[1 : len(b)-1])

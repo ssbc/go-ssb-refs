@@ -121,7 +121,7 @@ func TestParseSimpleURIs(t *testing.T) {
 	}
 }
 
-func ExampleNewExperimentalURIs() {
+func ExampleNewExperimentalURI() {
 	check := func(err error) {
 		if err != nil {
 			log.Fatal(err)
