@@ -155,7 +155,7 @@ func TestFormatMessageRef(t *testing.T) {
 			msgRef, err := m.Message()
 			require.NoError(t, err)
 
-			require.True(t, msgRef.Equal(tc.in), "got %s and %s", msgRef.Ref(), tc.in.Ref())
+			require.True(t, msgRef.Equal(tc.in), "got %s and %s", msgRef.String(), tc.in.String())
 
 			encoded, err := m.MarshalBinary()
 			if tc.err != nil {
