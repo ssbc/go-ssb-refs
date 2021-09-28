@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2021 Henry Bubert
+#
+# SPDX-License-Identifier: CC0-1.0
+
+image: alpine/latest
+packages:
+  - go
+sources:
+  - https://git.sr.ht/~cryptix/go-ssb-refs
+tasks:
+  - test: |
+      cd go-ssb-refs
+      go test ./...
