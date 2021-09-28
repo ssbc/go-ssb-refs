@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2021 Henry Bubert
+//
 // SPDX-License-Identifier: MIT
 
 // Package refs strives to offer a couple of types and corresponding encoding code to help other go-based ssb projects to talk about message, feed and blob references without pulling in all of go-ssb and it's network and database code.

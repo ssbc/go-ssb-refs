@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 Henry Bubert
+//
+// SPDX-License-Identifier: CC0-1.0
+
 // Package tfk implements the type-format-key encoding for SSB references.
 //
 // See https://github.com/ssbc/envelope-spec/ ... encoding/tfk.md

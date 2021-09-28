@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 Henry Bubert
+//
+// SPDX-License-Identifier: CC0-1.0
+
 package tfk
 
 // value is the basic type-format-key value holder.

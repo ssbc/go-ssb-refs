@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 Henry Bubert
+//
+// SPDX-License-Identifier: CC0-1.0
+
 module go.mindeco.de/ssb-refs
 
 go 1.14
