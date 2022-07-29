@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 Henry Bubert
+#
+# SPDX-License-Identifier: MIT
+
 name: Go
 
 on:

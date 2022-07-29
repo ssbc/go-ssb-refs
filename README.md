@@ -1,0 +1,16 @@
+<!--
+SPDX-FileCopyrightText: 2022 Henry Bubert
+
+SPDX-License-Identifier: MIT
+-->
+
+# ssb-refs for Go
+
+
+[![Go Reference](https://pkg.go.dev/badge/go.mindeco.de/ssb-refs.svg)](https://pkg.go.dev/go.mindeco.de/ssb-refs)
+[![Go Report Card](https://goreportcard.com/badge/go.mindeco.de/ssb-refs)](https://goreportcard.com/report/go.mindeco.de/ssb-refs)
+[![Tests](https://github.com/ssbc/go-ssb-refs/actions/workflows/go.yml/badge.svg)](https://github.com/ssbc/go-ssb-refs/actions/workflows/go.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![REUSE status](https://api.reuse.software/badge/github.com/ssbc/go-ssb-refs)](https://api.reuse.software/info/github.com/ssbc/go-ssb-refs)
+
+This package contains utilitiy code for parsing sigil references (`@pubkey..`, `%msghash..`, etc.), basic content types like Posts and About messages as well as a sorter for tangle structures.
