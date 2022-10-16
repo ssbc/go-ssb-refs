@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	refs "go.mindeco.de/ssb-refs"
-	"go.mindeco.de/ssb-refs/tfk"
+	refs "github.com/ssbc/go-ssb-refs"
+	"github.com/ssbc/go-ssb-refs/tfk"
 )
 
 func mustMakeFeed(t *testing.T, hash []byte, algo refs.RefAlgo) refs.FeedRef {

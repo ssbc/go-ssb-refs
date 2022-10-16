@@ -8,7 +8,7 @@ import (
 	"encoding"
 	"fmt"
 
-	refs "go.mindeco.de/ssb-refs"
+	refs "github.com/ssbc/go-ssb-refs"
 )
 
 // Encode returns type-format-key bytes for supported references.
