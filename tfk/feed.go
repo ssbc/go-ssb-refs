@@ -7,7 +7,7 @@ package tfk
 import (
 	"fmt"
 
-	refs "go.mindeco.de/ssb-refs"
+	refs "github.com/ssbc/go-ssb-refs"
 )
 
 // Feed represents a reference to a feed

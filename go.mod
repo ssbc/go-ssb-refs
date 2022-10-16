@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: CC0-1.0
 
-module go.mindeco.de/ssb-refs
+module github.com/ssbc/go-ssb-refs
 
 go 1.14
 

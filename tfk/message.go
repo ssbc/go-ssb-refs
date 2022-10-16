@@ -7,7 +7,7 @@ package tfk
 import (
 	"fmt"
 
-	refs "go.mindeco.de/ssb-refs"
+	refs "github.com/ssbc/go-ssb-refs"
 )
 
 // Message represents a reference to a message
