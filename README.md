@@ -7,7 +7,7 @@ SPDX-License-Identifier: MIT
 # go-ssb-refs
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ssbc/go-ssb-refs.svg)](https://pkg.go.dev/github.com/ssbc/go-ssb-refs)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ssbc/go-ssb-ref)](https://goreportcard.com/report/github.com/ssbc/go-ssb-ref)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ssbc/go-ssb-refs)](https://goreportcard.com/report/github.com/ssbc/go-ssb-refs)
 [![Tests](https://github.com/ssbc/go-ssb-refs/actions/workflows/go.yml/badge.svg)](https://github.com/ssbc/go-ssb-refs/actions/workflows/go.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![REUSE status](https://api.reuse.software/badge/github.com/ssbc/go-ssb-refs)](https://api.reuse.software/info/github.com/ssbc/go-ssb-refs)
