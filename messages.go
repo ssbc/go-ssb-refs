@@ -8,20 +8,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"go.mindeco.de/encodedTime"
 )
 
 // Value describes a signed entry on a classical ssb feed.
 // The name 'value' comes from seeing them in (hashed) 'key' and 'value' pairs from database query results.
 type Value struct {
-	Previous  *MessageRef           `json:"previous"`
-	Author    FeedRef               `json:"author"`
-	Sequence  int64                 `json:"sequence"`
-	Timestamp encodedTime.Millisecs `json:"timestamp"`
-	Hash      string                `json:"hash"`
-	Content   json.RawMessage       `json:"content"`
-	Signature string                `json:"signature"`
+	Previous  *MessageRef     `json:"previous"`
+	Author    FeedRef         `json:"author"`
+	Sequence  int64           `json:"sequence"`
+	Timestamp Millisecs       `json:"timestamp"`
+	Hash      string          `json:"hash"`
+	Content   json.RawMessage `json:"content"`
+	Signature string          `json:"signature"`
 
 	Meta map[string]interface{} `json:"meta,omitempty"`
 }
@@ -297,16 +295,16 @@ type OldAddress struct {
 
 // KeyValueRaw uses json.RawMessage for the content portion, this helps of the content needs to be deserialzed manually or not at all
 type KeyValueRaw struct {
-	Key_      MessageRef            `json:"key"` // Key_ is using the underline here to not conflict with the refs.Message interface (for history ceasons)
-	Value     Value                 `json:"value"`
-	Timestamp encodedTime.Millisecs `json:"timestamp"`
+	Key_      MessageRef `json:"key"` // Key_ is using the underline here to not conflict with the refs.Message interface (for history ceasons)
+	Value     Value      `json:"value"`
+	Timestamp Millisecs  `json:"timestamp"`
 }
 
 // KeyValueAsMap helps if there are no expectations about the content of a message
 type KeyValueAsMap struct {
-	Key       MessageRef            `json:"key"`
-	Value     Value                 `json:"value"`
-	Timestamp encodedTime.Millisecs `json:"timestamp"`
+	Key       MessageRef `json:"key"`
+	Value     Value      `json:"value"`
+	Timestamp Millisecs  `json:"timestamp"`
 }
 
 var _ Message = (*KeyValueRaw)(nil)
