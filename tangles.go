@@ -61,10 +61,10 @@ func (by *ByPrevious) fillLookup() {
 		root, prev := m.Tangle(by.TangleName)
 
 		if root == nil || len(prev) == 0 {
-			if by.root != "" {
-				panic("root already set")
+			if by.root == "" {
+				by.root = m.Key().String()
 			}
-			by.root = m.Key().String()
+			// skip duplicate roots — malformed data from the network should not crash
 			continue
 		}
 
@@ -129,7 +129,8 @@ func (by ByPrevious) hopsToRoot(key string, hop int) int {
 	}
 
 	if len(found) < 1 {
-		panic("not pointing to root?")
+		// message does not connect to root — incomplete or malformed tangle data
+		return math.MaxInt32
 	}
 	sort.Ints(found)
 	return found[len(found)-1]
