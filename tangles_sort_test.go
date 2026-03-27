@@ -256,6 +256,49 @@ func TestBranchMergeMulti(t *testing.T) {
 	require.Equal(t, "a2", string(h[0].hash[:2]))
 }
 
+// TestBranchDuplicateRoot verifies that Sort does not panic when the input
+// contains more than one message that looks like a tangle root (no prev).
+// This can happen with malformed or partially-received messages from the network.
+func TestBranchDuplicateRoot(t *testing.T) {
+	var msgs = []fakeMessage{
+		{key: "p1", order: 1, prev: nil},               // real root
+		{key: "p2", order: 2, prev: []string{"p1"}},
+		{key: "p3", order: 3, prev: []string{"p2"}},
+		{key: "p4", order: 4, prev: []string{"p3"}},
+		{key: "orphan", order: 0, prev: nil}, // malformed: second message with no prev
+	}
+
+	tp := make([]TangledPost, len(msgs))
+	for i, m := range msgs {
+		tp[i] = TangledPost(m)
+	}
+
+	sorter := &ByPrevious{Items: tp}
+	// must not panic
+	require.NotPanics(t, func() { sort.Sort(sorter) })
+}
+
+// TestBranchDanglingPrev verifies that Sort does not panic when a message
+// references a prev that is not present in the dataset.
+// This covers the hopsToRoot path that returns math.MaxInt32 for unreachable messages.
+func TestBranchDanglingPrev(t *testing.T) {
+	var msgs = []fakeMessage{
+		{key: "p1", order: 1, prev: nil},
+		{key: "p2", order: 2, prev: []string{"p1"}},
+		{key: "p3", order: 3, prev: []string{"p2"}},
+		// p4 points to "ghost" which is not in the dataset
+		{key: "p4", order: 0, prev: []string{"ghost"}},
+	}
+
+	tp := make([]TangledPost, len(msgs))
+	for i, m := range msgs {
+		tp[i] = TangledPost(m)
+	}
+
+	sorter := &ByPrevious{Items: tp}
+	require.NotPanics(t, func() { sort.Sort(sorter) })
+}
+
 func XTestBranchCausalityLong(t *testing.T) {
 	var msgs = []fakeMessage{
 		{key: "p1", order: 1, prev: nil},
